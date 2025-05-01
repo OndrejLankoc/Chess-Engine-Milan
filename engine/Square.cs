@@ -1,16 +1,18 @@
-public class Square
+namespace Engine
 {
-    public int File { get; set; }
-    public int Rank { get; set; }
-
-    public Square(int file, int rank)
+    public class Square
     {
-        File = file;
-        Rank = rank;
-    }
+        public int File { get; set; }
+        public int Rank { get; set; }
+        public Square(int file, int rank)
+        {
+            File = file;
+            Rank = rank;
+        }
 
-    public bool IsOnBoard()
-    {
-        return File >= 0 && File < 8 && Rank >= 0 && Rank < 8;
+        public bool IsOnBoard()
+        {
+            return File >= 0 && File < 8 && Rank >= 0 && Rank < 8;
+        }
     }
 }
