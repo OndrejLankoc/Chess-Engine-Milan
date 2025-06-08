@@ -25,6 +25,21 @@ namespace Engine
             Color = color;
         }
 
+        public List<Move> GetLegalMoves(Board originalBoard, Square positionOfPiece, MoveInfo previousMoveInfo)
+        {
+            List<Move> legalMoves = new List<Move>();
+            foreach (Move move in GetMoves(originalBoard, positionOfPiece, previousMoveInfo))
+            {
+                Board boardAfterMove = originalBoard.Clone();
+                boardAfterMove.MakeMove(move, previousMoveInfo);
+                if (!boardAfterMove.IsInCheck(Color))
+                {
+                    legalMoves.Add(move);
+                }
+            }
+            return legalMoves;
+        }
+
         public List<Move> GetMoves(Board board, Square positionOfPiece, MoveInfo previousMoveInfo)
         {
             switch (Type)
@@ -115,7 +130,7 @@ namespace Engine
         {
             List<Move> moves = new List<Move>();
 
-            int[,] relativePositions = { {-1, 2}, {1, 2}, {2, 1}, {2, -1}, {1, -2}, {-1, -2}, {-2, -1}, {-2, 1} };
+            int[,] relativePositions = { { -1, 2 }, { 1, 2 }, { 2, 1 }, { 2, -1 }, { 1, -2 }, { -1, -2 }, { -2, -1 }, { -2, 1 } };
             for (int i = 0; i < relativePositions.GetLength(0); i++)
             {
                 Square destination = new Square(positionOfPiece.File + relativePositions[i, 0], positionOfPiece.Rank + relativePositions[i, 1]);
@@ -131,8 +146,8 @@ namespace Engine
         private List<Move> GetBishopMoves(Board board, Square positionOfPiece)
         {
             List<Move> moves = new List<Move>();
-            
-            int[,] relativePositions = { {1, 1}, {1, -1}, {-1, -1}, {-1, 1} };
+
+            int[,] relativePositions = { { 1, 1 }, { 1, -1 }, { -1, -1 }, { -1, 1 } };
             for (int i = 0; i < relativePositions.GetLength(0); i++)
             {
                 Square destination = new Square(positionOfPiece.File + relativePositions[i, 0], positionOfPiece.Rank + relativePositions[i, 1]);
@@ -147,7 +162,7 @@ namespace Engine
                     }
 
                     multiplier++;
-                    destination = new Square(positionOfPiece.File + relativePositions[i, 0] * multiplier, positionOfPiece.Rank + relativePositions[i, 1] * multiplier); 
+                    destination = new Square(positionOfPiece.File + relativePositions[i, 0] * multiplier, positionOfPiece.Rank + relativePositions[i, 1] * multiplier);
                 }
             }
 
@@ -158,7 +173,7 @@ namespace Engine
         {
             List<Move> moves = new List<Move>();
 
-            int[,] relativePositions = { {0, 1}, {1, 0}, {0, -1}, {-1, 0} };
+            int[,] relativePositions = { { 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 } };
             for (int i = 0; i < relativePositions.GetLength(0); i++)
             {
                 Square destination = new Square(positionOfPiece.File + relativePositions[i, 0], positionOfPiece.Rank + relativePositions[i, 1]);
@@ -173,7 +188,7 @@ namespace Engine
                     }
 
                     multiplier++;
-                    destination = new Square(positionOfPiece.File + relativePositions[i, 0] * multiplier, positionOfPiece.Rank + relativePositions[i, 1] * multiplier); 
+                    destination = new Square(positionOfPiece.File + relativePositions[i, 0] * multiplier, positionOfPiece.Rank + relativePositions[i, 1] * multiplier);
                 }
             }
 
@@ -227,5 +242,73 @@ namespace Engine
             return moves;
         }
 
+        public List<Move> GetAttackMoves(Square positionOfPiece)
+        {
+            List<Move> attackMoves = new List<Move>();
+            switch (Type)
+            {
+                case PieceType.Pawn:
+                    int direction = (Color == PieceColor.White) ? 1 : -1;
+                    attackMoves.Add(new Move(positionOfPiece, new Square(positionOfPiece.File - 1, positionOfPiece.Rank + direction)));
+                    attackMoves.Add(new Move(positionOfPiece, new Square(positionOfPiece.File + 1, positionOfPiece.Rank + direction)));
+                    break;
+
+                case PieceType.Knight:
+                    int[,] relativePositions = { { -1, 2 }, { 1, 2 }, { 2, 1 }, { 2, -1 }, { 1, -2 }, { -1, -2 }, { -2, -1 }, { -2, 1 } };
+                    for (int i = 0; i < relativePositions.GetLength(0); i++)
+                    {
+                        attackMoves.Add(new Move(positionOfPiece, new Square(positionOfPiece.File + relativePositions[i, 0], positionOfPiece.Rank + relativePositions[i, 1])));
+                    }
+                    break;
+
+                case PieceType.Bishop:
+                    int[,] bishopRelativePositions = { { 1, 1 }, { 1, -1 }, { -1, -1 }, { -1, 1 } };
+                    attackMoves.AddRange(GetAttackMovesOfBRQ(positionOfPiece, bishopRelativePositions));
+                    break;
+
+                case PieceType.Rook:
+                    int[,] rookRelativePositions = { { 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 } };
+                    attackMoves.AddRange(GetAttackMovesOfBRQ(positionOfPiece, rookRelativePositions));
+                    break;
+
+                case PieceType.Queen:
+                    int[,] queenRelativePositions = { { 1, 1 }, { 1, -1 }, { -1, -1 }, { -1, 1 }, { 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 } };
+                    attackMoves.AddRange(GetAttackMovesOfBRQ(positionOfPiece, queenRelativePositions));
+                    break;
+
+                case PieceType.King:
+                    int[] kingRelativePositions = { -1, 0, 1 };
+                    for (int i = 0; i < kingRelativePositions.Length; i++)
+                    {
+                        for (int j = 0; j < kingRelativePositions.Length; j++)
+                        {
+                            Square destination = new Square(positionOfPiece.File + kingRelativePositions[i], positionOfPiece.Rank + kingRelativePositions[j]);
+                            if (destination.IsOnBoard())
+                            {
+                                attackMoves.Add(new Move(positionOfPiece, destination));
+                            }
+                        }
+                    }
+                    break;
+            }
+            return attackMoves;
+        }
+
+        private List<Move> GetAttackMovesOfBRQ(Square positionOfPiece, int[,] relativePositions)
+        {
+            List<Move> attackMoves = new List<Move>();
+            for (int i = 0; i < relativePositions.GetLength(0); i++)
+            {
+                Square destination = new Square(positionOfPiece.File + relativePositions[i, 0], positionOfPiece.Rank + relativePositions[i, 1]);
+                int multiplier = 1;
+                while (destination.IsOnBoard())
+                {
+                    attackMoves.Add(new Move(positionOfPiece, destination));
+                    multiplier++;
+                    destination = new Square(positionOfPiece.File + relativePositions[i, 0] * multiplier, positionOfPiece.Rank + relativePositions[i, 1] * multiplier);
+                }
+            }
+            return attackMoves;
+        }
     }
 }

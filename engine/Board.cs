@@ -4,6 +4,22 @@ namespace Engine
     {
         public Piece[,] Squares = new Piece[8, 8];
 
+        public Board Clone()
+        {
+            Board cloneBoard = new Board();
+            for (int file = 0; file < 8; file++)
+            {
+                for (int rank = 0; rank < 8; rank++)
+                {
+                    if (Squares[file, rank] != null)
+                    {
+                        cloneBoard.Squares[file, rank] = new Piece(Squares[file, rank].Type, Squares[file, rank].Color);
+                    }
+                }
+            }
+            return cloneBoard;
+        }
+
         public Piece GetPiece(Square square)
         {
             if (!square.IsOnBoard())
@@ -90,7 +106,7 @@ namespace Engine
                 Square rookSquareTo = new Square((move.To.File == 6) ? 5 : 3, (move.To.Rank == 0) ? 0 : 7);
                 Square rookSquareFrom = new Square((move.To.File == 6) ? 7 : 0, (move.To.Rank == 0) ? 0 : 7);
                 Squares[rookSquareFrom.File, rookSquareFrom.Rank] = Squares[rookSquareTo.File, rookSquareTo.Rank];
-                Squares[rookSquareTo.File, rookSquareTo.Rank] = null;   
+                Squares[rookSquareTo.File, rookSquareTo.Rank] = null;
             }
 
             if (moveInfo.IsEnPassant)
@@ -102,6 +118,44 @@ namespace Engine
             {
                 Squares[move.From.File, move.From.Rank] = new Piece(PieceType.Pawn, (move.To.Rank == 7) ? PieceColor.White : PieceColor.Black);
             }
+        }
+
+        public Square GetKingPosition(PieceColor color)
+        {
+            for (int file = 0; file < 8; file++)
+            {
+                for (int rank = 0; rank < 8; rank++)
+                {
+                    if (Squares[file, rank] != null && Squares[file, rank].Type == PieceType.King && Squares[file, rank].Color == color)
+                    {
+                        return new Square(file, rank);
+                    }
+                }
+            }
+            return null;
+        }
+
+        public bool IsInCheck(PieceColor color)
+        {
+            Square kingPosition = GetKingPosition(color);
+            for (int file = 0; file < 8; file++)
+            {
+                for (int rank = 0; rank < 8; rank++)
+                {
+                    if (Squares[file, rank] != null && Squares[file, rank].Color != color)
+                    {
+                        List<Move> moves = Squares[file, rank].GetAttackMoves(new Square(file, rank));
+                        foreach (Move move in moves)
+                        {
+                            if (move.To == kingPosition)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
         }
     }
 }
