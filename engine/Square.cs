@@ -4,7 +4,7 @@ namespace Engine
     {
         public int File { get; set; }
         public int Rank { get; set; }
-        public Square(int file, int rank)
+        public Square(int rank, int file)
         {
             File = file;
             Rank = rank;

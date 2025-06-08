@@ -11,9 +11,9 @@ namespace Engine
             {
                 for (int rank = 0; rank < 8; rank++)
                 {
-                    if (Squares[file, rank] != null)
+                    if (Squares[rank, file] != null)
                     {
-                        cloneBoard.Squares[file, rank] = new Piece(Squares[file, rank].Type, Squares[file, rank].Color);
+                        cloneBoard.Squares[rank, file] = new Piece(Squares[rank, file].Type, Squares[rank, file].Color);
                     }
                 }
             }
@@ -26,7 +26,7 @@ namespace Engine
             {
                 return null;
             }
-            return Squares[square.File, square.Rank];
+            return Squares[square.Rank, square.File];
         }
 
         public bool IsEmpty(Square square)
@@ -49,18 +49,18 @@ namespace Engine
             }
 
             MoveInfo moveInfo = new MoveInfo(GetPiece(move.To));
-            Squares[move.To.File, move.To.Rank] = piece;
-            Squares[move.From.File, move.From.Rank] = null;
+            Squares[move.To.Rank, move.To.File] = piece;
+            Squares[move.From.Rank, move.From.File] = null;
 
             if (piece.Type == PieceType.King)
             {
                 moveInfo.CastlingRightsAfterMove[(piece.Color == PieceColor.White) ? 0 : 2] = moveInfo.CastlingRightsAfterMove[(piece.Color == PieceColor.White) ? 1 : 3] = false;
                 if (Math.Abs(move.From.File - move.To.File) == 2)
                 {
-                    int rank = (piece.Color == PieceColor.White) ? 0 : 7;
+                    int rank = (piece.Color == PieceColor.White) ? 7 : 0;
                     int[] files = (move.To.File > move.From.File) ? new[] { 7, 5 } : new[] { 0, 3 };
-                    Squares[files[1], rank] = Squares[files[0], rank];
-                    Squares[files[0], rank] = null;
+                    Squares[rank, files[1]] = Squares[rank, files[0]];
+                    Squares[rank, files[0]] = null;
                     moveInfo.IsCastling = true;
                 }
             }
@@ -75,20 +75,20 @@ namespace Engine
             {
                 if (Math.Abs(move.From.Rank - move.To.Rank) == 2)
                 {
-                    moveInfo.EnPassantSquareAfterMove = new Square(move.To.File, move.To.Rank + (piece.Color == PieceColor.White ? -1 : 1));
+                    moveInfo.EnPassantSquareAfterMove = new Square(move.To.Rank + (piece.Color == PieceColor.White ? 1 : -1), move.To.File);
                 }
 
-                int rank = (piece.Color == PieceColor.White) ? 7 : 0;
+                int rank = (piece.Color == PieceColor.White) ? 0 : 7;
                 if (move.To.Rank == rank)
                 {
-                    Squares[move.To.File, move.To.Rank] = move.PromotedPiece;
+                    Squares[move.To.Rank, move.To.File] = move.PromotedPiece;
                     moveInfo.IsPromotion = true;
                     moveInfo.PromotedPiece = move.PromotedPiece;
                 }
 
                 if (moveInfo.EnPassantSquare == move.To)
                 {
-                    Squares[move.To.File, move.To.Rank + (piece.Color == PieceColor.White ? -1 : 1)] = null;
+                    Squares[move.To.Rank + (piece.Color == PieceColor.White ? 1 : -1), move.To.File] = null;
                     moveInfo.IsEnPassant = true;
                 }
             }
@@ -98,25 +98,25 @@ namespace Engine
 
         public void UndoMove(Move move, MoveInfo moveInfo)
         {
-            Squares[move.From.File, move.From.Rank] = Squares[move.To.File, move.To.Rank];
-            Squares[move.To.File, move.To.Rank] = moveInfo.TakenPiece;
+            Squares[move.From.Rank, move.From.File] = Squares[move.To.Rank, move.To.File];
+            Squares[move.To.Rank, move.To.File] = moveInfo.TakenPiece;
 
             if (moveInfo.IsCastling)
             {
-                Square rookSquareTo = new Square((move.To.File == 6) ? 5 : 3, (move.To.Rank == 0) ? 0 : 7);
-                Square rookSquareFrom = new Square((move.To.File == 6) ? 7 : 0, (move.To.Rank == 0) ? 0 : 7);
-                Squares[rookSquareFrom.File, rookSquareFrom.Rank] = Squares[rookSquareTo.File, rookSquareTo.Rank];
-                Squares[rookSquareTo.File, rookSquareTo.Rank] = null;
+                Square rookSquareTo = new Square((move.To.Rank == 0) ? 0 : 7, (move.To.File == 6) ? 5 : 3);
+                Square rookSquareFrom = new Square((move.To.Rank == 0) ? 0 : 7, (move.To.File == 6) ? 7 : 0);
+                Squares[rookSquareFrom.Rank, rookSquareFrom.File] = Squares[rookSquareTo.Rank, rookSquareTo.File];
+                Squares[rookSquareTo.Rank, rookSquareTo.File] = null;
             }
 
             if (moveInfo.IsEnPassant)
             {
-                Squares[move.To.File, move.To.Rank + ((move.From.Rank == 4) ? 1 : -1)] = new Piece(PieceType.Pawn, (move.From.Rank == 4) ? PieceColor.Black : PieceColor.White);
+                Squares[move.To.Rank + ((move.From.Rank == 4) ? -1 : 1), move.To.File] = new Piece(PieceType.Pawn, (move.From.Rank == 4) ? PieceColor.White : PieceColor.Black);
             }
 
             if (moveInfo.IsPromotion)
             {
-                Squares[move.From.File, move.From.Rank] = new Piece(PieceType.Pawn, (move.To.Rank == 7) ? PieceColor.White : PieceColor.Black);
+                Squares[move.From.Rank, move.From.File] = new Piece(PieceType.Pawn, (move.To.Rank == 7) ? PieceColor.Black : PieceColor.White);
             }
         }
 
@@ -126,9 +126,9 @@ namespace Engine
             {
                 for (int rank = 0; rank < 8; rank++)
                 {
-                    if (Squares[file, rank] != null && Squares[file, rank].Type == PieceType.King && Squares[file, rank].Color == color)
+                    if (Squares[rank, file] != null && Squares[rank, file].Type == PieceType.King && Squares[rank, file].Color == color)
                     {
-                        return new Square(file, rank);
+                        return new Square(rank, file);
                     }
                 }
             }
@@ -142,9 +142,9 @@ namespace Engine
             {
                 for (int rank = 0; rank < 8; rank++)
                 {
-                    if (Squares[file, rank] != null && Squares[file, rank].Color != color)
+                    if (Squares[rank, file] != null && Squares[rank, file].Color != color)
                     {
-                        List<Move> moves = Squares[file, rank].GetAttackMoves(new Square(file, rank));
+                        List<Move> moves = Squares[rank, file].GetAttackMoves(new Square(rank, file));
                         foreach (Move move in moves)
                         {
                             if (move.To == kingPosition)
@@ -156,6 +156,44 @@ namespace Engine
                 }
             }
             return false;
+        }
+
+        public int Evaluate()
+        {
+            int evaluation = 0;
+            int[,] pawnSquareTable =
+            {
+                { 0, 0, 0, 0, 0, 0, 0, 0 },
+                { 50, 50, 50, 50, 50, 50, 50, 50 },
+                { 10, 10, 20, 30, 30, 20, 10, 10 },
+                { 5,  5, 10, 25, 25, 10,  5,  5 },
+                { 0,  0,  0, 20, 20,  0,  0,  0 },
+                { 5, -5,-10,  0,  0,-10, -5,  5},
+                { 5, 10, 10,-20,-20, 10, 10,  5 },
+                { 0,  0,  0,  0,  0,  0,  0,  0 }
+            };
+
+            for (int file = 0; file < 8; file++)
+            {
+                for (int rank = 0; rank < 8; rank++)
+                {
+                    Piece piece = Squares[rank, file];
+                    if (piece != null && piece.Type != PieceType.King)
+                    {
+                        evaluation += (piece.Color == PieceColor.White ? 1 : -1) *
+                        (piece.Type switch
+                        {
+                            PieceType.Pawn => 100,
+                            PieceType.Knight => 320,
+                            PieceType.Bishop => 330,
+                            PieceType.Rook => 500,
+                            PieceType.Queen => 900,
+                            _ => 0
+                        });
+                    }
+                }
+            }
+            return evaluation;
         }
     }
 }

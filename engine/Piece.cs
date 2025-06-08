@@ -65,11 +65,11 @@ namespace Engine
         {
             List<Move> moves = new List<Move>();
 
-            int direction = (Color == PieceColor.White) ? 1 : -1;
-            Square forwardByOne = new Square(positionOfPiece.File, positionOfPiece.Rank + direction);
+            int direction = (Color == PieceColor.White) ? -1 : 1;
+            Square forwardByOne = new Square(positionOfPiece.Rank + direction, positionOfPiece.File);
             if (forwardByOne.IsOnBoard() && board.IsEmpty(forwardByOne))
             {
-                if (forwardByOne.Rank == (Color == PieceColor.White ? 7 : 0))
+                if (forwardByOne.Rank == (Color == PieceColor.White ? 0 : 7))
                 {
                     moves.Add(new Move(positionOfPiece, forwardByOne, new Piece(PieceType.Queen, Color)));
                     moves.Add(new Move(positionOfPiece, forwardByOne, new Piece(PieceType.Rook, Color)));
@@ -81,9 +81,9 @@ namespace Engine
                     moves.Add(new Move(positionOfPiece, forwardByOne));
                 }
 
-                if ((Color == PieceColor.White && positionOfPiece.Rank == 1) || (Color == PieceColor.Black && positionOfPiece.Rank == 6))
+                if ((Color == PieceColor.White && positionOfPiece.Rank == 6) || (Color == PieceColor.Black && positionOfPiece.Rank == 1))
                 {
-                    Square forwardByTwo = new Square(positionOfPiece.File, positionOfPiece.Rank + 2 * direction);
+                    Square forwardByTwo = new Square(positionOfPiece.Rank + 2 * direction, positionOfPiece.File);
                     if (forwardByTwo.IsOnBoard() && board.IsEmpty(forwardByTwo))
                     {
                         moves.Add(new Move(positionOfPiece, forwardByTwo));
@@ -91,10 +91,10 @@ namespace Engine
                 }
             }
 
-            Square captureLeft = new Square(positionOfPiece.File - 1, positionOfPiece.Rank + direction);
+            Square captureLeft = new Square(positionOfPiece.Rank + direction, positionOfPiece.File - 1);
             if (captureLeft.IsOnBoard() && (board.IsEnemy(captureLeft, Color) || captureLeft == previousMoveInfo.EnPassantSquareAfterMove))
             {
-                if (captureLeft.Rank == (Color == PieceColor.White ? 7 : 0))
+                if (captureLeft.Rank == (Color == PieceColor.White ? 0 : 7))
                 {
                     moves.Add(new Move(positionOfPiece, captureLeft, new Piece(PieceType.Queen, Color)));
                     moves.Add(new Move(positionOfPiece, captureLeft, new Piece(PieceType.Rook, Color)));
@@ -107,10 +107,10 @@ namespace Engine
                 }
             }
 
-            Square captureRight = new Square(positionOfPiece.File + 1, positionOfPiece.Rank + direction);
+            Square captureRight = new Square(positionOfPiece.Rank + direction, positionOfPiece.File + 1);
             if (captureRight.IsOnBoard() && (board.IsEnemy(captureRight, Color) || captureRight == previousMoveInfo.EnPassantSquareAfterMove))
             {
-                if (captureRight.Rank == (Color == PieceColor.White ? 7 : 0))
+                if (captureRight.Rank == (Color == PieceColor.White ? 0 : 7))
                 {
                     moves.Add(new Move(positionOfPiece, captureRight, new Piece(PieceType.Queen, Color)));
                     moves.Add(new Move(positionOfPiece, captureRight, new Piece(PieceType.Rook, Color)));
@@ -133,7 +133,7 @@ namespace Engine
             int[,] relativePositions = { { -1, 2 }, { 1, 2 }, { 2, 1 }, { 2, -1 }, { 1, -2 }, { -1, -2 }, { -2, -1 }, { -2, 1 } };
             for (int i = 0; i < relativePositions.GetLength(0); i++)
             {
-                Square destination = new Square(positionOfPiece.File + relativePositions[i, 0], positionOfPiece.Rank + relativePositions[i, 1]);
+                Square destination = new Square(positionOfPiece.Rank + relativePositions[i, 1], positionOfPiece.File + relativePositions[i, 0]);
                 if (destination.IsOnBoard() && (board.IsEmpty(destination) || board.IsEnemy(destination, Color)))
                 {
                     moves.Add(new Move(positionOfPiece, destination));
@@ -150,7 +150,7 @@ namespace Engine
             int[,] relativePositions = { { 1, 1 }, { 1, -1 }, { -1, -1 }, { -1, 1 } };
             for (int i = 0; i < relativePositions.GetLength(0); i++)
             {
-                Square destination = new Square(positionOfPiece.File + relativePositions[i, 0], positionOfPiece.Rank + relativePositions[i, 1]);
+                Square destination = new Square(positionOfPiece.Rank + relativePositions[i, 1], positionOfPiece.File + relativePositions[i, 0]);
                 int multiplier = 1;
                 while (destination.IsOnBoard() && (board.IsEmpty(destination) || board.IsEnemy(destination, Color)))
                 {
@@ -162,7 +162,7 @@ namespace Engine
                     }
 
                     multiplier++;
-                    destination = new Square(positionOfPiece.File + relativePositions[i, 0] * multiplier, positionOfPiece.Rank + relativePositions[i, 1] * multiplier);
+                    destination = new Square(positionOfPiece.Rank + relativePositions[i, 1] * multiplier, positionOfPiece.File + relativePositions[i, 0] * multiplier);
                 }
             }
 
@@ -176,7 +176,7 @@ namespace Engine
             int[,] relativePositions = { { 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 } };
             for (int i = 0; i < relativePositions.GetLength(0); i++)
             {
-                Square destination = new Square(positionOfPiece.File + relativePositions[i, 0], positionOfPiece.Rank + relativePositions[i, 1]);
+                Square destination = new Square(positionOfPiece.Rank + relativePositions[i, 1], positionOfPiece.File + relativePositions[i, 0]);
                 int multiplier = 1;
                 while (destination.IsOnBoard() && (board.IsEmpty(destination) || board.IsEnemy(destination, Color)))
                 {
@@ -188,7 +188,7 @@ namespace Engine
                     }
 
                     multiplier++;
-                    destination = new Square(positionOfPiece.File + relativePositions[i, 0] * multiplier, positionOfPiece.Rank + relativePositions[i, 1] * multiplier);
+                    destination = new Square(positionOfPiece.Rank + relativePositions[i, 1] * multiplier, positionOfPiece.File + relativePositions[i, 0] * multiplier);
                 }
             }
 
@@ -214,7 +214,7 @@ namespace Engine
             {
                 for (int j = 0; j < relativePosition.Length; j++)
                 {
-                    Square destination = new Square(positionOfPiece.File + i, positionOfPiece.Rank + j);
+                    Square destination = new Square(positionOfPiece.Rank + j, positionOfPiece.File + i);
                     if (destination.IsOnBoard() && (board.IsEmpty(destination) || board.IsEnemy(destination, Color)))
                     {
                         moves.Add(new Move(positionOfPiece, destination));
@@ -223,19 +223,19 @@ namespace Engine
             }
 
             int rights = (Color == PieceColor.White) ? 0 : 2;
-            int rank = (Color == PieceColor.White) ? 0 : 7;
+            int rank = (Color == PieceColor.White) ? 7 : 0;
             if (previousMoveInfo.CastlingRightsAfterMove[rights])
             {
-                if (board.IsEmpty(new Square(5, rank)) && board.IsEmpty(new Square(6, rank)))
+                if (board.IsEmpty(new Square(rank, 5)) && board.IsEmpty(new Square(rank, 6)))
                 {
-                    moves.Add(new Move(positionOfPiece, new Square(6, rank)));
+                    moves.Add(new Move(positionOfPiece, new Square(rank, 6)));
                 }
             }
             if (previousMoveInfo.CastlingRightsAfterMove[rights + 1])
             {
-                if (board.IsEmpty(new Square(3, rank)) && board.IsEmpty(new Square(2, rank)) && board.IsEmpty(new Square(1, rank)))
+                if (board.IsEmpty(new Square(rank, 3)) && board.IsEmpty(new Square(rank, 2)) && board.IsEmpty(new Square(rank, 1)))
                 {
-                    moves.Add(new Move(positionOfPiece, new Square(2, rank)));
+                    moves.Add(new Move(positionOfPiece, new Square(rank, 2)));
                 }
             }
 
@@ -248,16 +248,16 @@ namespace Engine
             switch (Type)
             {
                 case PieceType.Pawn:
-                    int direction = (Color == PieceColor.White) ? 1 : -1;
-                    attackMoves.Add(new Move(positionOfPiece, new Square(positionOfPiece.File - 1, positionOfPiece.Rank + direction)));
-                    attackMoves.Add(new Move(positionOfPiece, new Square(positionOfPiece.File + 1, positionOfPiece.Rank + direction)));
+                    int direction = (Color == PieceColor.White) ? -1 : 1;
+                    attackMoves.Add(new Move(positionOfPiece, new Square(positionOfPiece.Rank + direction, positionOfPiece.File - 1)));
+                    attackMoves.Add(new Move(positionOfPiece, new Square(positionOfPiece.Rank + direction, positionOfPiece.File + 1)));
                     break;
 
                 case PieceType.Knight:
                     int[,] relativePositions = { { -1, 2 }, { 1, 2 }, { 2, 1 }, { 2, -1 }, { 1, -2 }, { -1, -2 }, { -2, -1 }, { -2, 1 } };
                     for (int i = 0; i < relativePositions.GetLength(0); i++)
                     {
-                        attackMoves.Add(new Move(positionOfPiece, new Square(positionOfPiece.File + relativePositions[i, 0], positionOfPiece.Rank + relativePositions[i, 1])));
+                        attackMoves.Add(new Move(positionOfPiece, new Square(positionOfPiece.Rank + relativePositions[i, 1], positionOfPiece.File + relativePositions[i, 0])));
                     }
                     break;
 
@@ -282,7 +282,7 @@ namespace Engine
                     {
                         for (int j = 0; j < kingRelativePositions.Length; j++)
                         {
-                            Square destination = new Square(positionOfPiece.File + kingRelativePositions[i], positionOfPiece.Rank + kingRelativePositions[j]);
+                            Square destination = new Square(positionOfPiece.Rank + kingRelativePositions[j], positionOfPiece.File + kingRelativePositions[i]);
                             if (destination.IsOnBoard())
                             {
                                 attackMoves.Add(new Move(positionOfPiece, destination));
@@ -299,13 +299,13 @@ namespace Engine
             List<Move> attackMoves = new List<Move>();
             for (int i = 0; i < relativePositions.GetLength(0); i++)
             {
-                Square destination = new Square(positionOfPiece.File + relativePositions[i, 0], positionOfPiece.Rank + relativePositions[i, 1]);
+                Square destination = new Square(positionOfPiece.Rank + relativePositions[i, 1], positionOfPiece.File + relativePositions[i, 0]);
                 int multiplier = 1;
                 while (destination.IsOnBoard())
                 {
                     attackMoves.Add(new Move(positionOfPiece, destination));
                     multiplier++;
-                    destination = new Square(positionOfPiece.File + relativePositions[i, 0] * multiplier, positionOfPiece.Rank + relativePositions[i, 1] * multiplier);
+                    destination = new Square(positionOfPiece.Rank + relativePositions[i, 1] * multiplier, positionOfPiece.File + relativePositions[i, 0] * multiplier);
                 }
             }
             return attackMoves;
