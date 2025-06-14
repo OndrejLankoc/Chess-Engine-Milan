@@ -158,6 +158,36 @@ namespace Engine
             return false;
         }
 
+        public double endgamePhase()
+        {
+            int gamePhase = 0;
+            foreach (Piece piece in Squares)
+            {
+                if (piece != null)
+                {
+                    switch (piece.Type)
+                    {
+                        case PieceType.Knight:
+                        case PieceType.Bishop:
+                            gamePhase += 1;
+                            break;
+
+                        case PieceType.Rook:
+                            gamePhase += 2;
+                            break;
+
+                        case PieceType.Queen:
+                            gamePhase += 4;
+                            break;
+                    }
+                }
+            }
+
+            double endgamePhase = 1 - (gamePhase / 24);
+            endgamePhase = Math.Clamp(endgamePhase, 0, 1);
+            return endgamePhase;
+        }
+
         public int Evaluate()
         {
             int evaluation = 0;
@@ -166,11 +196,83 @@ namespace Engine
                 { 0, 0, 0, 0, 0, 0, 0, 0 },
                 { 50, 50, 50, 50, 50, 50, 50, 50 },
                 { 10, 10, 20, 30, 30, 20, 10, 10 },
-                { 5,  5, 10, 25, 25, 10,  5,  5 },
-                { 0,  0,  0, 20, 20,  0,  0,  0 },
-                { 5, -5,-10,  0,  0,-10, -5,  5},
-                { 5, 10, 10,-20,-20, 10, 10,  5 },
-                { 0,  0,  0,  0,  0,  0,  0,  0 }
+                { 5,  5, 10, 25, 25, 10, 5, 5 },
+                { 0, 0, 0, 20, 20, 0, 0, 0 },
+                { 5, -5, -10, 0, 0, -10, -5, 5 },
+                { 5, 10, 10, -20, -20, 10, 10, 5 },
+                { 0, 0, 0, 0, 0, 0, 0, 0 }
+            };
+
+            int[,] knightSquareTable =
+            {
+                { -50, -40, -30, -30, -30, -30, -40, -50 },
+                { -40, -20, 0, 0, 0, 0, -20, -40 },
+                { -30, 0, 10, 15, 15, 10, 0, -30 },
+                { -30, 5, 15, 20, 20, 15, 5, -30 },
+                { -30, 0, 15, 20, 20, 15, 0, -30 },
+                { -30, 5, 10, 15, 15, 10, 5, -30 },
+                { -40, -20, 0, 5, 5, 0, -20, -40 },
+                { -50, -40, -30, -30, -30, -30, -40, -50 }
+            };
+
+            int[,] bishopSquareTable =
+            {
+                { -20, -10, -10, -10, -10, -10, -10, -20 },
+                { -10, 0, 0, 0, 0, 0, 0, -10 },
+                { -10, 0, 5, 10, 10, 5, 0, -10 },
+                { -10, 5, 5, 10, 10, 5, 5, -10 },
+                { -10, 0, 10, 10, 10, 10, 0, -10 },
+                { -10, 10, 10, 10, 10, 10, 10, -10 },
+                { -10, 5, 0, 0, 0, 0, 5, -10 },
+                { -20, -10, -10, -10, -10, -10, -10, -20 }
+            };
+
+            int[,] rookSquareTable =
+            {
+                { 0, 0, 0, 0, 0, 0, 0, 0 },
+                { 5, 10, 10, 10, 10, 10, 10, 5 },
+                { -5, 0, 0, 0, 0, 0, 0, -5 },
+                { -5, 0, 0, 0, 0, 0, 0, -5 },
+                { -5, 0, 0, 0, 0, 0, 0, -5 },
+                { -5, 0, 0, 0, 0, 0, 0, -5 },
+                { -5, 0, 0, 0, 0, 0, 0, -5 },
+                { 0, 0, 0, 5, 5, 0, 0, 0 }
+            };
+
+            int[,] queenSquareTable =
+            {
+                { -20, -10, -10, -5, -5, -10, -10, -20 },
+                { -10, 0, 0, 0, 0, 0, 0, -10 },
+                { -10, 0, 5, 5, 5, 5, 0, -10 },
+                { -5, 0, 5, 5, 5, 5, 0, -5 },
+                { 0, 0, 5, 5, 5, 5, 0, -5 },
+                { -10, 5, 5, 5, 5, 5, 0, -10 },
+                { -10, 0, 5, 0, 0, 0, 0, -10 },
+                { -20, -10, -10, -5, -5, -10, -10, -20 }
+            };
+
+            int[,] mgKingSquareTable =
+            {
+                { -30, -40, -40, -50, -50, -40, -40, -30 },
+                { -30, -40, -40, -50, -50, -40, -40, -30 },
+                { -30, -40, -40, -50, -50, -40, -40, -30 },
+                { -30, -40, -40, -50, -50, -40, -40, -30 },
+                { -20, -30, -30, -40, -40, -30, -30, -20 },
+                { -10, -20, -20, -20, -20, -20, -20, -10 },
+                { 20, 20, 0, 0, 0, 0, 20, 20 },
+                { 20, 30, 10, 0, 0, 10, 30, 20 }
+            };
+
+            int[,] egKingSquareTable =
+            {
+                { -50, -40, -30, -20, -20, -30, -40, -50 },
+                { -30, -20, -10, 0, 0, -10, -20, -30 },
+                { -30, -10, 20, 30, 30, 20, -10, -30 },
+                { -30, -10, 30, 40, 40, 30, -10, -30 },
+                { -30, -10, 30, 40, 40, 30, -10, -30 },
+                { -30, -10, 20, 30, 30, 20, -10, -30 },
+                { -30, -30, 0, 0, 0, 0, -30, -30 },
+                { -50, -30, -30, -30, -30, -30, -30, -50 }
             };
 
             for (int file = 0; file < 8; file++)
@@ -180,14 +282,16 @@ namespace Engine
                     Piece piece = Squares[rank, file];
                     if (piece != null && piece.Type != PieceType.King)
                     {
+                        int rankIndex = (piece.Color == PieceColor.White) ? rank : 7 - rank;
                         evaluation += (piece.Color == PieceColor.White ? 1 : -1) *
                         (piece.Type switch
                         {
-                            PieceType.Pawn => 100,
-                            PieceType.Knight => 320,
-                            PieceType.Bishop => 330,
-                            PieceType.Rook => 500,
-                            PieceType.Queen => 900,
+                            PieceType.Pawn => 100 + pawnSquareTable[rankIndex, file],
+                            PieceType.Knight => 320 + knightSquareTable[rankIndex, file],
+                            PieceType.Bishop => 330 + bishopSquareTable[rankIndex, file],
+                            PieceType.Rook => 500 + rookSquareTable[rankIndex, file],
+                            PieceType.Queen => 900 + queenSquareTable[rankIndex, file],
+                            PieceType.King => 20000 + (1 - endgamePhase()) * mgKingSquareTable[rankIndex, file] + endgamePhase() * egKingSquareTable[rankIndex, file],
                             _ => 0
                         });
                     }
