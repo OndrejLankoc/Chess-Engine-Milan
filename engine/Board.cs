@@ -37,7 +37,7 @@ namespace Engine
         public bool IsEnemy(Square square, PieceColor color)
         {
             Piece piece = GetPiece(square);
-            return piece.Color != color;
+            return piece != null && piece.Color != color;
         }
 
         public MoveInfo MakeMove(Move move, MoveInfo previousMoveInfo)
@@ -48,7 +48,12 @@ namespace Engine
                 return null;
             }
 
-            MoveInfo moveInfo = new MoveInfo(GetPiece(move.To));
+            MoveInfo moveInfo = new MoveInfo(GetPiece(move.To))
+            {
+                CastlingRights = previousMoveInfo.CastlingRightsAfterMove,
+                CastlingRightsAfterMove = previousMoveInfo.CastlingRightsAfterMove,
+                EnPassantSquare = previousMoveInfo.EnPassantSquareAfterMove
+            };
             Squares[move.To.Rank, move.To.File] = piece;
             Squares[move.From.Rank, move.From.File] = null;
 
@@ -116,7 +121,7 @@ namespace Engine
 
             if (moveInfo.IsPromotion)
             {
-                Squares[move.From.Rank, move.From.File] = new Piece(PieceType.Pawn, (move.To.Rank == 7) ? PieceColor.Black : PieceColor.White);
+                Squares[move.From.Rank, move.From.File] = new Piece(PieceType.Pawn, (Squares[move.From.Rank, move.From.File].Color == PieceColor.Black) ? PieceColor.Black : PieceColor.White);
             }
         }
 
@@ -183,7 +188,7 @@ namespace Engine
                 }
             }
 
-            double endgamePhase = 1 - (gamePhase / 24);
+            double endgamePhase = 1 - (gamePhase / 24.0);
             endgamePhase = Math.Clamp(endgamePhase, 0, 1);
             return endgamePhase;
         }
@@ -280,7 +285,7 @@ namespace Engine
                 for (int rank = 0; rank < 8; rank++)
                 {
                     Piece piece = Squares[rank, file];
-                    if (piece != null && piece.Type != PieceType.King)
+                    if (piece != null)
                     {
                         int rankIndex = (piece.Color == PieceColor.White) ? rank : 7 - rank;
                         evaluation += (piece.Color == PieceColor.White ? 1 : -1) *
@@ -291,13 +296,52 @@ namespace Engine
                             PieceType.Bishop => 330 + bishopSquareTable[rankIndex, file],
                             PieceType.Rook => 500 + rookSquareTable[rankIndex, file],
                             PieceType.Queen => 900 + queenSquareTable[rankIndex, file],
-                            PieceType.King => 20000 + (1 - endgamePhase()) * mgKingSquareTable[rankIndex, file] + endgamePhase() * egKingSquareTable[rankIndex, file],
+                            PieceType.King => 20000 + (int)((1 - endgamePhase()) * mgKingSquareTable[rankIndex, file] + endgamePhase() * egKingSquareTable[rankIndex, file]),
                             _ => 0
                         });
                     }
                 }
             }
             return evaluation;
+        }
+
+        public int Search(int depth, PieceColor sideToMove, MoveInfo previousMoveInfo)
+        {
+            List<Move> moves = new List<Move>();
+            for (int rank = 0; rank < 8; rank++)
+            {
+                for (int file = 0; file < 8; file++)
+                {
+                    Piece piece = Squares[rank, file];
+                    if (piece != null && piece.Color == sideToMove)
+                    {
+                        moves.AddRange(piece.GetLegalMoves(this, new Square(rank, file), previousMoveInfo));
+                    }
+                }
+            }
+            if (moves.Count == 0)
+            {
+                if (IsInCheck(sideToMove))
+                {
+                    return sideToMove == PieceColor.White ? int.MinValue + depth : int.MaxValue - depth;
+                }
+                return 0;
+            }
+
+            if (depth == 0)
+            {
+                return Evaluate();
+            }
+
+            int bestScore = sideToMove == PieceColor.White ? int.MinValue : int.MaxValue;
+            foreach (Move move in moves)
+            {
+                Board nextMove = Clone();
+                MoveInfo nextMoveInfo = nextMove.MakeMove(move, previousMoveInfo);
+                int score = nextMove.Search(depth - 1, sideToMove == PieceColor.White ? PieceColor.Black : PieceColor.White, nextMoveInfo);
+                bestScore = sideToMove == PieceColor.White ? Math.Max(bestScore, score) : Math.Min(bestScore, score);
+            }
+            return bestScore;
         }
     }
 }
