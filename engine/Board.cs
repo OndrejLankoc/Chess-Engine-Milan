@@ -6,6 +6,30 @@ namespace Engine
     {
         public Piece[,] Squares = new Piece[8, 8];
 
+        public void setupBoard()
+        {
+            for (int file = 0; file < 8; file++)
+            {
+                Squares[1, file] = new Piece(PieceType.Pawn, PieceColor.Black);
+                Squares[6, file] = new Piece(PieceType.Pawn, PieceColor.White);
+            }
+
+            Squares[0, 0] = Squares[0, 7] = new Piece(PieceType.Rook, PieceColor.Black);
+            Squares[7, 0] = Squares[7, 7] = new Piece(PieceType.Rook, PieceColor.White);
+
+            Squares[0, 1] = Squares[0, 6] = new Piece(PieceType.Knight, PieceColor.Black);
+            Squares[7, 1] = Squares[7, 6] = new Piece(PieceType.Knight, PieceColor.White);
+
+            Squares[0, 2] = Squares[0, 5] = new Piece(PieceType.Bishop, PieceColor.Black);
+            Squares[7, 2] = Squares[7, 5] = new Piece(PieceType.Bishop, PieceColor.White);
+
+            Squares[0, 3] = new Piece(PieceType.Queen, PieceColor.Black);
+            Squares[7, 3] = new Piece(PieceType.Queen, PieceColor.White);
+
+            Squares[0, 4] = new Piece(PieceType.King, PieceColor.Black);
+            Squares[7, 4] = new Piece(PieceType.King, PieceColor.White);
+        }
+
         public Board Clone()
         {
             Board cloneBoard = new Board();
@@ -20,6 +44,28 @@ namespace Engine
                 }
             }
             return cloneBoard;
+        }
+
+        public bool Equals(Board secondBoard)
+        {
+            for (int file = 0; file < 8; file++)
+            {
+                for (int rank = 0; rank < 8; rank++)
+                {
+                    Piece a = Squares[rank, file];
+                    Piece b = secondBoard.Squares[rank, file];
+
+                    if (a == null && b == null)
+                    {
+                        continue;
+                    }
+                    if (a == null || b == null || a.Type != b.Type || a.Color != b.Color)
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
 
         public Piece GetPiece(Square square)
@@ -98,6 +144,7 @@ namespace Engine
                     Squares[move.To.Rank + (piece.Color == PieceColor.White ? 1 : -1), move.To.File] = null;
                     moveInfo.IsEnPassant = true;
                 }
+                moveInfo.IsPawnMove = true;
             }
 
             return moveInfo;
@@ -162,6 +209,87 @@ namespace Engine
                     }
                 }
             }
+            return false;
+        }
+
+        public bool IsGameOver(PieceColor sideToMove, List<MoveInfo> listOfAllMovesInfo, List<Move> listOfAllMoves)
+        {
+            MoveInfo previousMoveInfo = listOfAllMovesInfo.Count > 0 ? listOfAllMovesInfo[listOfAllMovesInfo.Count - 1] : new MoveInfo();
+            List<Move> moves = new List<Move>();
+            for (int rank = 0; rank < 8; rank++)
+            {
+                for (int file = 0; file < 8; file++)
+                {
+                    Piece piece = Squares[rank, file];
+                    if (piece != null && piece.Color == sideToMove)
+                    {
+                        moves.AddRange(piece.GetLegalMoves(this, new Square(rank, file), previousMoveInfo));
+                    }
+                }
+            }
+            if (moves.Count == 0)
+            {
+                return true;
+            }
+
+            int pieceCount = 0;
+            foreach (Piece piece in Squares)
+            {
+                if (piece != null && piece.Type != PieceType.King && piece.Type != PieceType.Knight && piece.Type != PieceType.Bishop)
+                {
+                    pieceCount = 4;
+                    break;
+                }
+                else if (piece != null)
+                {
+                    pieceCount++;
+                }
+            }
+            if (pieceCount <= 3)
+            {
+                return true;
+            }
+
+            if (listOfAllMoves.Count >= 8)
+                {
+                    Board previousPositions = Clone();
+                    int positionCount = 1;
+
+                    for (int i = listOfAllMoves.Count - 1; i >= 0; i--)
+                    {
+                        Move move = listOfAllMoves[i];
+                        MoveInfo moveInfo = listOfAllMovesInfo[i];
+                        previousPositions.UndoMove(move, moveInfo);
+                        if (Equals(previousPositions))
+                        {
+                            positionCount++;
+                            if (positionCount >= 3)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+
+            if (listOfAllMovesInfo.Count > 100)
+                {
+                    bool drawBy50MoveRule = true;
+                    int count = listOfAllMovesInfo.Count - 100;
+                    for (int i = listOfAllMovesInfo.Count - 1; i >= count; i--)
+                    {
+                        MoveInfo moveInfo = listOfAllMovesInfo[i];
+                        if (moveInfo.TakenPiece != null || moveInfo.IsPawnMove)
+                        {
+                            drawBy50MoveRule = false;
+                            break;
+                        }
+                    }
+                    if (drawBy50MoveRule)
+                    {
+                        return true;
+                    }
+                }
+
             return false;
         }
 
