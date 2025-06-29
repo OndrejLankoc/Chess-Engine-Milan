@@ -5,6 +5,8 @@ namespace Engine
     public class Board
     {
         public Piece[,] Squares = new Piece[8, 8];
+        public bool[] castlingRights = {true, true, true, true}; // [0] = White Kingside, [1] = White Queenside, [2] = Black Kingside, [3] = Black Queenside
+        public Square? enPassantSquare = null;
 
         public void setupBoard()
         {
@@ -88,26 +90,22 @@ namespace Engine
             return piece != null && piece.Color != color;
         }
 
-        public MoveInfo MakeMove(Move move, MoveInfo previousMoveInfo)
+        public MoveInfo MakeMove(Move move)
         {
             Piece piece = GetPiece(move.From);
-            if (piece == null || !piece.GetMoves(this, move.From, previousMoveInfo).Contains(move))
+            if (piece == null)
             {
                 return null;
             }
 
-            MoveInfo moveInfo = new MoveInfo(GetPiece(move.To))
-            {
-                CastlingRights = previousMoveInfo.CastlingRightsAfterMove,
-                CastlingRightsAfterMove = previousMoveInfo.CastlingRightsAfterMove,
-                EnPassantSquare = previousMoveInfo.EnPassantSquareAfterMove
-            };
+            MoveInfo moveInfo = new MoveInfo(GetPiece(move.To));
+            enPassantSquare = null;
             Squares[move.To.Rank, move.To.File] = piece;
             Squares[move.From.Rank, move.From.File] = null;
 
             if (piece.Type == PieceType.King)
             {
-                moveInfo.CastlingRightsAfterMove[(piece.Color == PieceColor.White) ? 0 : 2] = moveInfo.CastlingRightsAfterMove[(piece.Color == PieceColor.White) ? 1 : 3] = false;
+                castlingRights[(piece.Color == PieceColor.White) ? 0 : 2] = castlingRights[(piece.Color == PieceColor.White) ? 1 : 3] = false;
                 if (Math.Abs(move.From.File - move.To.File) == 2)
                 {
                     int rank = (piece.Color == PieceColor.White) ? 7 : 0;
@@ -121,14 +119,14 @@ namespace Engine
             if (piece.Type == PieceType.Rook)
             {
                 int i = ((piece.Color == PieceColor.White) ? 0 : 2) + ((move.From.File == 7) ? 0 : 1);
-                moveInfo.CastlingRightsAfterMove[i] = false;
+                castlingRights[i] = false;
             }
 
             if (piece.Type == PieceType.Pawn)
             {
                 if (Math.Abs(move.From.Rank - move.To.Rank) == 2)
                 {
-                    moveInfo.EnPassantSquareAfterMove = new Square(move.To.Rank + (piece.Color == PieceColor.White ? 1 : -1), move.To.File);
+                    enPassantSquare = new Square(move.To.Rank + (piece.Color == PieceColor.White ? 1 : -1), move.To.File);
                 }
 
                 int rank = (piece.Color == PieceColor.White) ? 0 : 7;
@@ -139,7 +137,7 @@ namespace Engine
                     moveInfo.PromotedPiece = move.PromotedPiece;
                 }
 
-                if (moveInfo.EnPassantSquare == move.To)
+                if (enPassantSquare == move.To)
                 {
                     Squares[move.To.Rank + (piece.Color == PieceColor.White ? 1 : -1), move.To.File] = null;
                     moveInfo.IsEnPassant = true;
@@ -223,7 +221,7 @@ namespace Engine
                     Piece piece = Squares[rank, file];
                     if (piece != null && piece.Color == sideToMove)
                     {
-                        moves.AddRange(piece.GetLegalMoves(this, new Square(rank, file), previousMoveInfo));
+                        moves.AddRange(piece.GetLegalMoves(this, new Square(rank, file), castlingRights, enPassantSquare));
                     }
                 }
             }
@@ -290,6 +288,25 @@ namespace Engine
                     }
                 }
 
+            return false;
+        }
+
+        public bool IsMoveLegal(Move move, PieceColor sideToMove)
+        {
+            Piece piece = GetPiece(move.From);
+            if (piece == null || piece.Color != sideToMove)
+            {
+                return false;
+            }
+
+            List<Move> legalMoves = piece.GetLegalMoves(this, move.From, castlingRights, enPassantSquare);
+            foreach (Move legalMove in legalMoves)
+            {
+                if (move.Equals(legalMove))
+                {
+                    return true;
+                }
+            }
             return false;
         }
 
@@ -435,7 +452,7 @@ namespace Engine
             return evaluation;
         }
 
-        public int Search(int depth, PieceColor sideToMove, MoveInfo previousMoveInfo, out Move bestMove, int alpha = int.MinValue, int beta = int.MaxValue)
+        public int Search(int depth, PieceColor sideToMove, out Move bestMove, int alpha = int.MinValue, int beta = int.MaxValue)
         {
             bestMove = null;
             List<Move> moves = new List<Move>();
@@ -446,7 +463,7 @@ namespace Engine
                     Piece piece = Squares[rank, file];
                     if (piece != null && piece.Color == sideToMove)
                     {
-                        moves.AddRange(piece.GetLegalMoves(this, new Square(rank, file), previousMoveInfo));
+                        moves.AddRange(piece.GetLegalMoves(this, new Square(rank, file), castlingRights, enPassantSquare));
                     }
                 }
             }
@@ -468,8 +485,8 @@ namespace Engine
             foreach (Move move in moves)
             {
                 Board nextMove = Clone();
-                MoveInfo nextMoveInfo = nextMove.MakeMove(move, previousMoveInfo);
-                int score = nextMove.Search(depth - 1, sideToMove == PieceColor.White ? PieceColor.Black : PieceColor.White, nextMoveInfo, out _, alpha, beta);
+                MoveInfo nextMoveInfo = nextMove.MakeMove(move);
+                int score = nextMove.Search(depth - 1, sideToMove == PieceColor.White ? PieceColor.Black : PieceColor.White, out _, alpha, beta);
                 if (sideToMove == PieceColor.White)
                 {
                     if (score > bestScore)

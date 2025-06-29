@@ -25,13 +25,13 @@ namespace Engine
             Color = color;
         }
 
-        public List<Move> GetLegalMoves(Board originalBoard, Square positionOfPiece, MoveInfo previousMoveInfo)
+        public List<Move> GetLegalMoves(Board originalBoard, Square positionOfPiece, bool[] castlingRights, Square? enPassantSquare = null)
         {
             List<Move> legalMoves = new List<Move>();
-            foreach (Move move in GetMoves(originalBoard, positionOfPiece, previousMoveInfo))
+            foreach (Move move in GetMoves(originalBoard, positionOfPiece, castlingRights, enPassantSquare))
             {
                 Board boardAfterMove = originalBoard.Clone();
-                boardAfterMove.MakeMove(move, previousMoveInfo);
+                boardAfterMove.MakeMove(move);
                 if (!boardAfterMove.IsInCheck(Color))
                 {
                     legalMoves.Add(move);
@@ -40,12 +40,12 @@ namespace Engine
             return legalMoves;
         }
 
-        public List<Move> GetMoves(Board board, Square positionOfPiece, MoveInfo previousMoveInfo)
+        public List<Move> GetMoves(Board board, Square positionOfPiece, bool[] castlingRights, Square? enPassantSquare = null)
         {
             switch (Type)
             {
                 case PieceType.Pawn:
-                    return GetPawnMoves(board, positionOfPiece, previousMoveInfo);
+                    return GetPawnMoves(board, positionOfPiece, enPassantSquare);
                 case PieceType.Knight:
                     return GetKnightMoves(board, positionOfPiece);
                 case PieceType.Bishop:
@@ -55,13 +55,13 @@ namespace Engine
                 case PieceType.Queen:
                     return GetQueenMoves(board, positionOfPiece);
                 case PieceType.King:
-                    return GetKingMoves(board, positionOfPiece, previousMoveInfo);
+                    return GetKingMoves(board, positionOfPiece, castlingRights);
                 default:
                     return new List<Move>();
             }
         }
 
-        private List<Move> GetPawnMoves(Board board, Square positionOfPiece, MoveInfo previousMoveInfo)
+        private List<Move> GetPawnMoves(Board board, Square positionOfPiece, Square? enPassantSquare)
         {
             List<Move> moves = new List<Move>();
 
@@ -92,7 +92,7 @@ namespace Engine
             }
 
             Square captureLeft = new Square(positionOfPiece.Rank + direction, positionOfPiece.File - 1);
-            if (captureLeft.IsOnBoard() && (board.IsEnemy(captureLeft, Color) || captureLeft == previousMoveInfo.EnPassantSquareAfterMove))
+            if (captureLeft.IsOnBoard() && (board.IsEnemy(captureLeft, Color) || captureLeft == enPassantSquare))
             {
                 if (captureLeft.Rank == (Color == PieceColor.White ? 0 : 7))
                 {
@@ -108,7 +108,7 @@ namespace Engine
             }
 
             Square captureRight = new Square(positionOfPiece.Rank + direction, positionOfPiece.File + 1);
-            if (captureRight.IsOnBoard() && (board.IsEnemy(captureRight, Color) || captureRight == previousMoveInfo.EnPassantSquareAfterMove))
+            if (captureRight.IsOnBoard() && (board.IsEnemy(captureRight, Color) || captureRight == enPassantSquare))
             {
                 if (captureRight.Rank == (Color == PieceColor.White ? 0 : 7))
                 {
@@ -205,7 +205,7 @@ namespace Engine
             return moves;
         }
 
-        private List<Move> GetKingMoves(Board board, Square positionOfPiece, MoveInfo previousMoveInfo)
+        private List<Move> GetKingMoves(Board board, Square positionOfPiece, bool[] castlingRights)
         {
             List<Move> moves = new List<Move>();
 
@@ -224,14 +224,14 @@ namespace Engine
 
             int rights = (Color == PieceColor.White) ? 0 : 2;
             int rank = (Color == PieceColor.White) ? 7 : 0;
-            if (previousMoveInfo.CastlingRightsAfterMove[rights])
+            if (castlingRights[rights])
             {
                 if (board.IsEmpty(new Square(rank, 5)) && board.IsEmpty(new Square(rank, 6)))
                 {
                     moves.Add(new Move(positionOfPiece, new Square(rank, 6)));
                 }
             }
-            if (previousMoveInfo.CastlingRightsAfterMove[rights + 1])
+            if (castlingRights[rights + 1])
             {
                 if (board.IsEmpty(new Square(rank, 3)) && board.IsEmpty(new Square(rank, 2)) && board.IsEmpty(new Square(rank, 1)))
                 {

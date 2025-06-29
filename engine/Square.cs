@@ -2,12 +2,12 @@ namespace Engine
 {
     public class Square
     {
-        public int File { get; set; }
         public int Rank { get; set; }
+        public int File { get; set; }
         public Square(int rank, int file)
         {
-            File = file;
             Rank = rank;
+            File = file;
         }
 
         public bool IsOnBoard()

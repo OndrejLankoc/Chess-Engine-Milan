@@ -12,7 +12,25 @@ namespace Engine
             PromotedPiece = promotedPiece;
         }
 
-        public bool TryParse(PieceColor color, string moveString, out Move move)
+        public bool Equals(Move secondMove)
+        {
+            if (From.Rank != secondMove.From.Rank || From.File != secondMove.From.File || To.Rank != secondMove.To.Rank || To.File != secondMove.To.File)
+            {
+                return false;
+            }
+
+            if (PromotedPiece == null && secondMove.PromotedPiece == null)
+            {
+                return true;
+            }
+            if (PromotedPiece == null || secondMove.PromotedPiece == null || PromotedPiece.Type != secondMove.PromotedPiece.Type || PromotedPiece.Color != secondMove.PromotedPiece.Color)
+            {
+                return false;
+            }
+            return true;
+        }
+
+        public static bool TryParse(PieceColor color, string moveString, out Move move)
         {
             if (moveString.Length < 4 || moveString.Length > 5)
             {
@@ -21,9 +39,9 @@ namespace Engine
             }
 
             int fromFile = moveString[0] - 'a';
-            int fromRank = moveString[1] - '1';
+            int fromRank = '8' - moveString[1];
             int toFile = moveString[2] - 'a';
-            int toRank = moveString[3] - '1';
+            int toRank = '8' - moveString[3];
 
             Square from = new Square(fromRank, fromFile);
             Square to = new Square(toRank, toFile);
@@ -53,9 +71,9 @@ namespace Engine
         public string ToString()
         {
             string fromFile = ((char)('a' + From.File)).ToString();
-            string fromRank = (From.Rank + 1).ToString();
+            string fromRank = (8 - From.Rank).ToString();
             string toFile = ((char)('a' + To.File)).ToString();
-            string toRank = (To.Rank + 1).ToString();
+            string toRank = (8 - To.Rank).ToString();
 
             string moveString = $"{fromFile}{fromRank}{toFile}{toRank}";
 
@@ -88,11 +106,7 @@ namespace Engine
         public MoveInfo(Piece? takenPiece = null)
         {
             TakenPiece = takenPiece;
-            CastlingRights = [true, true, true, true];
-            CastlingRightsAfterMove = [true, true, true, true]; // [0] = White Kingside, [1] = White Queenside, [2] = Black Kingside, [3] = Black Queenside
             IsCastling = false;
-            EnPassantSquare = null;
-            EnPassantSquareAfterMove = null;
             IsEnPassant = false;
             IsPromotion = false;
             IsPawnMove = false;
