@@ -1,3 +1,5 @@
+using System.Security.AccessControl;
+
 namespace Engine
 {
     public class Board
@@ -305,8 +307,9 @@ namespace Engine
             return evaluation;
         }
 
-        public int Search(int depth, PieceColor sideToMove, MoveInfo previousMoveInfo)
+        public int Search(int depth, PieceColor sideToMove, MoveInfo previousMoveInfo, out Move bestMove, int alpha = int.MinValue, int beta = int.MaxValue)
         {
+            bestMove = null;
             List<Move> moves = new List<Move>();
             for (int rank = 0; rank < 8; rank++)
             {
@@ -338,8 +341,33 @@ namespace Engine
             {
                 Board nextMove = Clone();
                 MoveInfo nextMoveInfo = nextMove.MakeMove(move, previousMoveInfo);
-                int score = nextMove.Search(depth - 1, sideToMove == PieceColor.White ? PieceColor.Black : PieceColor.White, nextMoveInfo);
-                bestScore = sideToMove == PieceColor.White ? Math.Max(bestScore, score) : Math.Min(bestScore, score);
+                int score = nextMove.Search(depth - 1, sideToMove == PieceColor.White ? PieceColor.Black : PieceColor.White, nextMoveInfo, out _, alpha, beta);
+                if (sideToMove == PieceColor.White)
+                {
+                    if (score > bestScore)
+                    {
+                        bestScore = score;
+                        bestMove = move;
+                    }
+                    alpha = Math.Max(alpha, bestScore);
+                    if (alpha >= beta)
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    if (score < bestScore)
+                    {
+                        bestScore = score;
+                        bestMove = move;
+                    }
+                    beta = Math.Min(beta, bestScore);
+                    if (beta <= alpha)
+                    {
+                        break;
+                    }
+                }
             }
             return bestScore;
         }
