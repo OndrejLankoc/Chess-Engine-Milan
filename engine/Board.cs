@@ -1,5 +1,3 @@
-using System.Security.AccessControl;
-
 namespace Engine
 {
     public class Board
@@ -7,6 +5,9 @@ namespace Engine
         public Piece[,] Squares = new Piece[8, 8];
         public bool[] castlingRights = {true, true, true, true}; // [0] = White Kingside, [1] = White Queenside, [2] = Black Kingside, [3] = Black Queenside
         public Square? enPassantSquare = null;
+        public PieceColor sideToMove = PieceColor.White;
+        public int halfMoveClock = 0;
+        public int fullMoveNumber = 1;
 
         public void setupBoard()
         {
@@ -35,6 +36,10 @@ namespace Engine
         public Board Clone()
         {
             Board cloneBoard = new Board();
+            cloneBoard.sideToMove = sideToMove;
+            cloneBoard.enPassantSquare = enPassantSquare;
+            cloneBoard.castlingRights = (bool[])castlingRights.Clone();
+
             for (int file = 0; file < 8; file++)
             {
                 for (int rank = 0; rank < 8; rank++)
@@ -99,7 +104,6 @@ namespace Engine
             }
 
             MoveInfo moveInfo = new MoveInfo(GetPiece(move.To));
-            enPassantSquare = null;
             Squares[move.To.Rank, move.To.File] = piece;
             Squares[move.From.Rank, move.From.File] = null;
 
@@ -124,11 +128,6 @@ namespace Engine
 
             if (piece.Type == PieceType.Pawn)
             {
-                if (Math.Abs(move.From.Rank - move.To.Rank) == 2)
-                {
-                    enPassantSquare = new Square(move.To.Rank + (piece.Color == PieceColor.White ? 1 : -1), move.To.File);
-                }
-
                 int rank = (piece.Color == PieceColor.White) ? 0 : 7;
                 if (move.To.Rank == rank)
                 {
@@ -137,14 +136,25 @@ namespace Engine
                     moveInfo.PromotedPiece = move.PromotedPiece;
                 }
 
-                if (enPassantSquare == move.To)
+                if (enPassantSquare != null && enPassantSquare.File == move.To.File && enPassantSquare.Rank == move.To.Rank)
                 {
                     Squares[move.To.Rank + (piece.Color == PieceColor.White ? 1 : -1), move.To.File] = null;
                     moveInfo.IsEnPassant = true;
                 }
+
+                enPassantSquare = null;
+
+                if (Math.Abs(move.From.Rank - move.To.Rank) == 2)
+                {
+                    enPassantSquare = new Square(move.To.Rank + (piece.Color == PieceColor.White ? 1 : -1), move.To.File);
+                }
+
                 moveInfo.IsPawnMove = true;
             }
 
+            fullMoveNumber = (sideToMove == PieceColor.Black) ? fullMoveNumber + 1 : fullMoveNumber;
+            halfMoveClock = (moveInfo.IsPawnMove || moveInfo.TakenPiece != null) ? 0 : halfMoveClock + 1;
+            sideToMove = (sideToMove == PieceColor.White) ? PieceColor.Black : PieceColor.White;
             return moveInfo;
         }
 
@@ -210,9 +220,8 @@ namespace Engine
             return false;
         }
 
-        public bool IsGameOver(PieceColor sideToMove, List<MoveInfo> listOfAllMovesInfo, List<Move> listOfAllMoves)
+        public bool IsGameOver(List<MoveInfo> listOfAllMovesInfo, List<Move> listOfAllMoves)
         {
-            MoveInfo previousMoveInfo = listOfAllMovesInfo.Count > 0 ? listOfAllMovesInfo[listOfAllMovesInfo.Count - 1] : new MoveInfo();
             List<Move> moves = new List<Move>();
             for (int rank = 0; rank < 8; rank++)
             {
@@ -248,50 +257,36 @@ namespace Engine
                 return true;
             }
 
-            if (listOfAllMoves.Count >= 8)
-                {
-                    Board previousPositions = Clone();
-                    int positionCount = 1;
+            if (fullMoveNumber >= 4)
+            {
+                Board previousPositions = Clone();
+                int positionCount = 1;
 
-                    for (int i = listOfAllMoves.Count - 1; i >= 0; i--)
+                for (int i = listOfAllMoves.Count - 1; i >= 0; i--)
+                {
+                    Move move = listOfAllMoves[i];
+                    MoveInfo moveInfo = listOfAllMovesInfo[i];
+                    previousPositions.UndoMove(move, moveInfo);
+                    if (Equals(previousPositions))
                     {
-                        Move move = listOfAllMoves[i];
-                        MoveInfo moveInfo = listOfAllMovesInfo[i];
-                        previousPositions.UndoMove(move, moveInfo);
-                        if (Equals(previousPositions))
+                        positionCount++;
+                        if (positionCount >= 3)
                         {
-                            positionCount++;
-                            if (positionCount >= 3)
-                            {
-                                return true;
-                            }
+                            return true;
                         }
                     }
                 }
+            }
 
-            if (listOfAllMovesInfo.Count > 100)
-                {
-                    bool drawBy50MoveRule = true;
-                    int count = listOfAllMovesInfo.Count - 100;
-                    for (int i = listOfAllMovesInfo.Count - 1; i >= count; i--)
-                    {
-                        MoveInfo moveInfo = listOfAllMovesInfo[i];
-                        if (moveInfo.TakenPiece != null || moveInfo.IsPawnMove)
-                        {
-                            drawBy50MoveRule = false;
-                            break;
-                        }
-                    }
-                    if (drawBy50MoveRule)
-                    {
-                        return true;
-                    }
-                }
+            if (halfMoveClock >= 100)
+            {
+                return true;
+            }
 
             return false;
         }
 
-        public bool IsMoveLegal(Move move, PieceColor sideToMove)
+        public bool IsMoveLegal(Move move)
         {
             Piece piece = GetPiece(move.From);
             if (piece == null || piece.Color != sideToMove)
@@ -452,7 +447,7 @@ namespace Engine
             return evaluation;
         }
 
-        public int Search(int depth, PieceColor sideToMove, out Move bestMove, int alpha = int.MinValue, int beta = int.MaxValue)
+        public int Search(int depth, out Move bestMove, int alpha = int.MinValue, int beta = int.MaxValue)
         {
             bestMove = null;
             List<Move> moves = new List<Move>();
@@ -485,8 +480,8 @@ namespace Engine
             foreach (Move move in moves)
             {
                 Board nextMove = Clone();
-                MoveInfo nextMoveInfo = nextMove.MakeMove(move);
-                int score = nextMove.Search(depth - 1, sideToMove == PieceColor.White ? PieceColor.Black : PieceColor.White, out _, alpha, beta);
+                nextMove.MakeMove(move);
+                int score = nextMove.Search(depth - 1, out _, alpha, beta);
                 if (sideToMove == PieceColor.White)
                 {
                     if (score > bestScore)

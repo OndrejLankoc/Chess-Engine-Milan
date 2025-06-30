@@ -92,7 +92,7 @@ namespace Engine
             }
 
             Square captureLeft = new Square(positionOfPiece.Rank + direction, positionOfPiece.File - 1);
-            if (captureLeft.IsOnBoard() && (board.IsEnemy(captureLeft, Color) || captureLeft == enPassantSquare))
+            if (captureLeft.IsOnBoard() && (board.IsEnemy(captureLeft, Color) || (enPassantSquare != null && captureLeft.Rank == enPassantSquare.Rank && captureLeft.File == enPassantSquare.File)))
             {
                 if (captureLeft.Rank == (Color == PieceColor.White ? 0 : 7))
                 {
@@ -108,7 +108,7 @@ namespace Engine
             }
 
             Square captureRight = new Square(positionOfPiece.Rank + direction, positionOfPiece.File + 1);
-            if (captureRight.IsOnBoard() && (board.IsEnemy(captureRight, Color) || captureRight == enPassantSquare))
+            if (captureRight.IsOnBoard() && (board.IsEnemy(captureRight, Color) || (enPassantSquare != null && captureRight.Rank == enPassantSquare.Rank && captureRight.File == enPassantSquare.File)))
             {
                 if (captureRight.Rank == (Color == PieceColor.White ? 0 : 7))
                 {
@@ -214,7 +214,7 @@ namespace Engine
             {
                 for (int j = 0; j < relativePosition.Length; j++)
                 {
-                    Square destination = new Square(positionOfPiece.Rank + j, positionOfPiece.File + i);
+                    Square destination = new Square(positionOfPiece.Rank + relativePosition[j], positionOfPiece.File + relativePosition[i]);
                     if (destination.IsOnBoard() && (board.IsEmpty(destination) || board.IsEnemy(destination, Color)))
                     {
                         moves.Add(new Move(positionOfPiece, destination));

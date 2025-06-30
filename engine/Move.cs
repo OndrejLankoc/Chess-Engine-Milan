@@ -94,11 +94,7 @@ namespace Engine
     public class MoveInfo
     {
         public Piece? TakenPiece { get; set; }
-        public bool[] CastlingRights { get; set; } 
-        public bool[] CastlingRightsAfterMove { get; set; }
         public bool IsCastling { get; set; }
-        public Square? EnPassantSquare { get; set; }
-        public Square? EnPassantSquareAfterMove { get; set; }
         public bool IsEnPassant { get; set; }
         public bool IsPromotion { get; set; }
         public bool IsPawnMove { get; set; }
