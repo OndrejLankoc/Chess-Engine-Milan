@@ -5,7 +5,8 @@
         static void Main(string[] args)
         {
             Board board = new Board();
-            board.setupBoard();
+            board.SetupBoard();
+            // board.SetupBoardFromFEN("");
 
             PieceColor playerColor = PieceColor.White;
 

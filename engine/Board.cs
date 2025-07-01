@@ -9,7 +9,7 @@ namespace Engine
         public int halfMoveClock = 0;
         public int fullMoveNumber = 1;
 
-        public void setupBoard()
+        public void SetupBoard()
         {
             for (int file = 0; file < 8; file++)
             {
@@ -31,6 +31,72 @@ namespace Engine
 
             Squares[0, 4] = new Piece(PieceType.King, PieceColor.Black);
             Squares[7, 4] = new Piece(PieceType.King, PieceColor.White);
+        }
+
+        public void SetupBoardFromFEN(string fen)
+        {
+            string[] fenParts = fen.Split(' ');
+            if (fenParts.Length != 6)
+            {
+                throw new ArgumentException("Invalid FEN string.");
+            }
+
+            string[] ranks = fenParts[0].Split('/');
+            if (ranks.Length != 8)
+            {
+                throw new ArgumentException("Invalid FEN string: incorrect number of ranks.");
+            }
+
+            for (int rank = 0; rank < 8; rank++)
+            {
+                int skippedFiles = 0;
+                for (int file = 0; file + skippedFiles < 8; file++)
+                {
+                    if (int.TryParse(ranks[rank][file].ToString(), out int emptySquares))
+                    {
+                        skippedFiles += emptySquares - 1;
+                        continue;
+                    }
+
+                    PieceType type = char.ToLower(ranks[rank][file]) switch
+                    {
+                        'p' => PieceType.Pawn,
+                        'n' => PieceType.Knight,
+                        'b' => PieceType.Bishop,
+                        'r' => PieceType.Rook,
+                        'q' => PieceType.Queen,
+                        'k' => PieceType.King,
+                        _ => throw new ArgumentException($"Invalid piece type: {ranks[rank][file]}")
+                    };
+                    PieceColor color = char.IsLower(ranks[rank][file]) ? PieceColor.Black : PieceColor.White;
+                    Squares[rank, file + skippedFiles] = new Piece(type, color);
+                }
+            }
+
+            sideToMove = fenParts[1] == "w" ? PieceColor.White : PieceColor.Black;
+
+            castlingRights[0] = fenParts[2].Contains('K');
+            castlingRights[1] = fenParts[2].Contains('Q');
+            castlingRights[2] = fenParts[2].Contains('k');
+            castlingRights[3] = fenParts[2].Contains('q');
+
+            if (fenParts[3] != "-")
+            {
+                if (!Square.TryParse(fenParts[3], out enPassantSquare))
+                {
+                    throw new ArgumentException($"Invalid en passant square: {fenParts[3]}");
+                }
+            }
+
+            if (!int.TryParse(fenParts[4], out halfMoveClock) || halfMoveClock < 0)
+            {
+                throw new ArgumentException($"Invalid half-move clock: {fenParts[4]}");
+            }
+
+            if (!int.TryParse(fenParts[5], out fullMoveNumber) || fullMoveNumber < 1)
+            {
+                throw new ArgumentException($"Invalid full-move number: {fenParts[5]}");
+            }
         }
 
         public Board Clone()
@@ -490,10 +556,6 @@ namespace Engine
                         bestMove = move;
                     }
                     alpha = Math.Max(alpha, bestScore);
-                    if (alpha >= beta)
-                    {
-                        break;
-                    }
                 }
                 else
                 {
@@ -503,10 +565,11 @@ namespace Engine
                         bestMove = move;
                     }
                     beta = Math.Min(beta, bestScore);
-                    if (beta <= alpha)
-                    {
-                        break;
-                    }
+                }
+
+                if (alpha >= beta)
+                {
+                    break;
                 }
             }
             return bestScore;
