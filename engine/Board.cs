@@ -170,6 +170,8 @@ namespace Engine
             }
 
             MoveInfo moveInfo = new MoveInfo(GetPiece(move.To));
+            moveInfo.CastlingRights = (bool[])castlingRights.Clone();
+            moveInfo.EnPassantSquare = enPassantSquare;
             Squares[move.To.Rank, move.To.File] = piece;
             Squares[move.From.Rank, move.From.File] = null;
 
@@ -328,12 +330,12 @@ namespace Engine
                 Board previousPositions = Clone();
                 int positionCount = 1;
 
-                for (int i = listOfAllMoves.Count - 1; i >= 0; i--)
+                for (int i = listOfAllMoves.Count - 1; i >= 0; i-=2)
                 {
                     Move move = listOfAllMoves[i];
                     MoveInfo moveInfo = listOfAllMovesInfo[i];
                     previousPositions.UndoMove(move, moveInfo);
-                    if (Equals(previousPositions))
+                    if (Equals(previousPositions) && moveInfo.CastlingRights.SequenceEqual(castlingRights) && moveInfo.EnPassantSquare == enPassantSquare)
                     {
                         positionCount++;
                         if (positionCount >= 3)
