@@ -6,7 +6,6 @@
         {
             Board board = new Board();
             board.SetupBoard();
-            // board.SetupBoardFromFEN("");
 
             PieceColor playerColor = PieceColor.White;
 

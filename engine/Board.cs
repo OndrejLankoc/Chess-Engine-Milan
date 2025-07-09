@@ -9,93 +9,77 @@ namespace Engine
         public int halfMoveClock = 0;
         public int fullMoveNumber = 1;
 
-        public void SetupBoard()
+        public void SetupBoard(string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
         {
-            for (int file = 0; file < 8; file++)
+            try
             {
-                Squares[1, file] = new Piece(PieceType.Pawn, PieceColor.Black);
-                Squares[6, file] = new Piece(PieceType.Pawn, PieceColor.White);
-            }
-
-            Squares[0, 0] = Squares[0, 7] = new Piece(PieceType.Rook, PieceColor.Black);
-            Squares[7, 0] = Squares[7, 7] = new Piece(PieceType.Rook, PieceColor.White);
-
-            Squares[0, 1] = Squares[0, 6] = new Piece(PieceType.Knight, PieceColor.Black);
-            Squares[7, 1] = Squares[7, 6] = new Piece(PieceType.Knight, PieceColor.White);
-
-            Squares[0, 2] = Squares[0, 5] = new Piece(PieceType.Bishop, PieceColor.Black);
-            Squares[7, 2] = Squares[7, 5] = new Piece(PieceType.Bishop, PieceColor.White);
-
-            Squares[0, 3] = new Piece(PieceType.Queen, PieceColor.Black);
-            Squares[7, 3] = new Piece(PieceType.Queen, PieceColor.White);
-
-            Squares[0, 4] = new Piece(PieceType.King, PieceColor.Black);
-            Squares[7, 4] = new Piece(PieceType.King, PieceColor.White);
-        }
-
-        public void SetupBoardFromFEN(string fen)
-        {
-            string[] fenParts = fen.Split(' ');
-            if (fenParts.Length != 6)
-            {
-                throw new ArgumentException("Invalid FEN string.");
-            }
-
-            string[] ranks = fenParts[0].Split('/');
-            if (ranks.Length != 8)
-            {
-                throw new ArgumentException("Invalid FEN string: incorrect number of ranks.");
-            }
-
-            for (int rank = 0; rank < 8; rank++)
-            {
-                int skippedFiles = 0;
-                for (int file = 0; file + skippedFiles < 8; file++)
+                string[] fenParts = fen.Split(' ');
+                if (fenParts.Length != 6)
                 {
-                    if (int.TryParse(ranks[rank][file].ToString(), out int emptySquares))
+                    throw new ArgumentException("Invalid FEN string: incorrect number of parts.");
+                }
+
+                string[] ranks = fenParts[0].Split('/');
+                if (ranks.Length != 8)
+                {
+                    throw new ArgumentException("Invalid FEN string: incorrect number of ranks.");
+                }
+
+                for (int rank = 0; rank < 8; rank++)
+                {
+                    int skippedFiles = 0;
+                    for (int file = 0; file + skippedFiles < 8; file++)
                     {
-                        skippedFiles += emptySquares - 1;
-                        continue;
+                        if (int.TryParse(ranks[rank][file].ToString(), out int emptySquares))
+                        {
+                            skippedFiles += emptySquares - 1;
+                            continue;
+                        }
+
+                        PieceType type = char.ToLower(ranks[rank][file]) switch
+                        {
+                            'p' => PieceType.Pawn,
+                            'n' => PieceType.Knight,
+                            'b' => PieceType.Bishop,
+                            'r' => PieceType.Rook,
+                            'q' => PieceType.Queen,
+                            'k' => PieceType.King,
+                            _ => throw new ArgumentException($"Invalid piece type: {ranks[rank][file]}")
+                        };
+                        PieceColor color = char.IsLower(ranks[rank][file]) ? PieceColor.Black : PieceColor.White;
+                        Squares[rank, file + skippedFiles] = new Piece(type, color);
                     }
-
-                    PieceType type = char.ToLower(ranks[rank][file]) switch
-                    {
-                        'p' => PieceType.Pawn,
-                        'n' => PieceType.Knight,
-                        'b' => PieceType.Bishop,
-                        'r' => PieceType.Rook,
-                        'q' => PieceType.Queen,
-                        'k' => PieceType.King,
-                        _ => throw new ArgumentException($"Invalid piece type: {ranks[rank][file]}")
-                    };
-                    PieceColor color = char.IsLower(ranks[rank][file]) ? PieceColor.Black : PieceColor.White;
-                    Squares[rank, file + skippedFiles] = new Piece(type, color);
                 }
-            }
 
-            sideToMove = fenParts[1] == "w" ? PieceColor.White : PieceColor.Black;
+                sideToMove = fenParts[1] == "w" ? PieceColor.White : fenParts[1] == "b" ? PieceColor.Black : throw new ArgumentException($"Invalid side to move: {fenParts[1]}");
 
-            castlingRights[0] = fenParts[2].Contains('K');
-            castlingRights[1] = fenParts[2].Contains('Q');
-            castlingRights[2] = fenParts[2].Contains('k');
-            castlingRights[3] = fenParts[2].Contains('q');
+                castlingRights[0] = fenParts[2].Contains('K');
+                castlingRights[1] = fenParts[2].Contains('Q');
+                castlingRights[2] = fenParts[2].Contains('k');
+                castlingRights[3] = fenParts[2].Contains('q');
 
-            if (fenParts[3] != "-")
-            {
-                if (!Square.TryParse(fenParts[3], out enPassantSquare))
+                if (fenParts[3] != "-")
                 {
-                    throw new ArgumentException($"Invalid en passant square: {fenParts[3]}");
+                    if (!Square.TryParse(fenParts[3], out enPassantSquare))
+                    {
+                        throw new ArgumentException($"Invalid en passant square: {fenParts[3]}");
+                    }
+                }
+
+                if (!int.TryParse(fenParts[4], out halfMoveClock) || halfMoveClock < 0)
+                {
+                    throw new ArgumentException($"Invalid half-move clock: {fenParts[4]}");
+                }
+
+                if (!int.TryParse(fenParts[5], out fullMoveNumber) || fullMoveNumber < 1)
+                {
+                    throw new ArgumentException($"Invalid full-move number: {fenParts[5]}");
                 }
             }
-
-            if (!int.TryParse(fenParts[4], out halfMoveClock) || halfMoveClock < 0)
+            catch (ArgumentException e)
             {
-                throw new ArgumentException($"Invalid half-move clock: {fenParts[4]}");
-            }
-
-            if (!int.TryParse(fenParts[5], out fullMoveNumber) || fullMoveNumber < 1)
-            {
-                throw new ArgumentException($"Invalid full-move number: {fenParts[5]}");
+                Console.WriteLine(e.Message);
+                Environment.Exit(1);
             }
         }
 
