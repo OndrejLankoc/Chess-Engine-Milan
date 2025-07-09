@@ -4,7 +4,7 @@ namespace Engine
     {
         public Piece[,] Squares = new Piece[8, 8];
         public bool[] castlingRights = {true, true, true, true}; // [0] = White Kingside, [1] = White Queenside, [2] = Black Kingside, [3] = Black Queenside
-        public Square? enPassantSquare = null;
+        public Square? enPassantSquare;
         public PieceColor sideToMove = PieceColor.White;
         public int halfMoveClock = 0;
         public int fullMoveNumber = 1;

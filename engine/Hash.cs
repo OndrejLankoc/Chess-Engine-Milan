@@ -1,0 +1,35 @@
+namespace Engine
+{
+    static class Hash
+    {
+        public static ulong[,] PieceSquare = new ulong[12, 64];
+        public static ulong SideToMove;
+        public static ulong[] CastlingRights = new ulong[4];
+        public static ulong[] EnPassantSquare = new ulong[8];
+
+        static Random rng = new Random(314159);
+
+        static Hash()
+        {
+            for (int i = 0; i < 12; i++)
+            {
+                for (int j = 0; j < 64; j++)
+                {
+                    PieceSquare[i, j] = (ulong)rng.Next() << 32 | (ulong)rng.Next();
+                }
+            }
+
+            SideToMove = (ulong)rng.Next() << 32 | (ulong)rng.Next();
+
+            for (int i = 0; i < 4; i++)
+            {
+                CastlingRights[i] = (ulong)rng.Next() << 32 | (ulong)rng.Next();
+            }
+
+            for (int i = 0; i < 8; i++)
+            {
+                EnPassantSquare[i] = (ulong)rng.Next() << 32 | (ulong)rng.Next();
+            }
+        }
+    }
+}
