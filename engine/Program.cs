@@ -5,14 +5,14 @@
         static void Main(string[] args)
         {
             Board board = new Board();
-            board.SetupBoard();
+            board.SetupBoard("rnbqkbnr/pppp1ppp/4p3/8/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq - 0 2");
 
             PieceColor playerColor = PieceColor.White;
 
             List<Move> playedMoves = new List<Move>();
             List<MoveInfo> playedMovesInfo = new List<MoveInfo>();
 
-            while (!board.IsGameOver(playedMovesInfo, playedMoves))
+            while (board.Result(playedMovesInfo, playedMoves, out _) == GameResult.Ongoing)
             {
                 if (board.sideToMove == playerColor)
                 {
@@ -43,7 +43,7 @@
                     Console.WriteLine("Computer is thinking...");
 
                     Move bestMove;
-                    board.Search(4, out bestMove);
+                    board.Search(4, out bestMove, playedMoves, playedMovesInfo);
 
                     playedMovesInfo.Add(board.MakeMove(bestMove));
                     playedMoves.Add(bestMove);
@@ -51,7 +51,8 @@
                     Console.WriteLine($"{bestMove.ToString()}");
                 }
             }
-            Console.WriteLine("GG");
+            GameResult result = board.Result(playedMovesInfo, playedMoves, out string reason);
+            Console.WriteLine($"{result} - {reason}");
         }
     }
 }

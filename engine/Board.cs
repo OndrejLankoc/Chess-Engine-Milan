@@ -1,9 +1,16 @@
 namespace Engine
 {
+    public enum GameResult
+    {
+        WhiteWin,
+        BlackWin,
+        Draw,
+        Ongoing
+    }
     public class Board
     {
         public Piece[,] Squares = new Piece[8, 8];
-        public bool[] castlingRights = {true, true, true, true}; // [0] = White Kingside, [1] = White Queenside, [2] = Black Kingside, [3] = Black Queenside
+        public bool[] castlingRights = { true, true, true, true }; // [0] = White Kingside, [1] = White Queenside, [2] = Black Kingside, [3] = Black Queenside
         public Square? enPassantSquare;
         public PieceColor sideToMove = PieceColor.White;
         public int halfMoveClock = 0;
@@ -156,6 +163,7 @@ namespace Engine
             MoveInfo moveInfo = new MoveInfo(GetPiece(move.To));
             moveInfo.CastlingRights = (bool[])castlingRights.Clone();
             moveInfo.EnPassantSquare = enPassantSquare;
+            moveInfo.HalfMoveClock = halfMoveClock;
             Squares[move.To.Rank, move.To.File] = piece;
             Squares[move.From.Rank, move.From.File] = null;
 
@@ -232,6 +240,12 @@ namespace Engine
             {
                 Squares[move.From.Rank, move.From.File] = new Piece(PieceType.Pawn, (Squares[move.From.Rank, move.From.File].Color == PieceColor.Black) ? PieceColor.Black : PieceColor.White);
             }
+
+            castlingRights = moveInfo.CastlingRights;
+            enPassantSquare = moveInfo.EnPassantSquare;
+            sideToMove = (sideToMove == PieceColor.White) ? PieceColor.Black : PieceColor.White;
+            halfMoveClock = moveInfo.HalfMoveClock;
+            fullMoveNumber = (sideToMove == PieceColor.Black) ? fullMoveNumber - 1 : fullMoveNumber;
         }
 
         public Square GetKingPosition(PieceColor color)
@@ -261,7 +275,7 @@ namespace Engine
                         List<Move> moves = Squares[rank, file].GetAttackMoves(new Square(rank, file));
                         foreach (Move move in moves)
                         {
-                            if (move.To == kingPosition)
+                            if (move.To.Rank == kingPosition.Rank && move.To.File == kingPosition.File)
                             {
                                 return true;
                             }
@@ -272,8 +286,9 @@ namespace Engine
             return false;
         }
 
-        public bool IsGameOver(List<MoveInfo> listOfAllMovesInfo, List<Move> listOfAllMoves)
+        public GameResult Result(List<MoveInfo> listOfAllMovesInfo, List<Move> listOfAllMoves, out string reason)
         {
+            reason = null;
             List<Move> moves = new List<Move>();
             for (int rank = 0; rank < 8; rank++)
             {
@@ -288,7 +303,11 @@ namespace Engine
             }
             if (moves.Count == 0)
             {
-                return true;
+                if (IsInCheck(sideToMove))
+                {
+                    reason = "Checkmate";
+                    return sideToMove == PieceColor.White ? GameResult.BlackWin : GameResult.WhiteWin;
+                }
             }
 
             int pieceCount = 0;
@@ -306,7 +325,8 @@ namespace Engine
             }
             if (pieceCount <= 3)
             {
-                return true;
+                reason = "Insufficient material";
+                return GameResult.Draw;
             }
 
             if (fullMoveNumber >= 4)
@@ -314,7 +334,7 @@ namespace Engine
                 Board previousPositions = Clone();
                 int positionCount = 1;
 
-                for (int i = listOfAllMoves.Count - 1; i >= 0; i-=2)
+                for (int i = listOfAllMoves.Count - 1; i >= 0; i -= 2)
                 {
                     Move move = listOfAllMoves[i];
                     MoveInfo moveInfo = listOfAllMovesInfo[i];
@@ -324,7 +344,8 @@ namespace Engine
                         positionCount++;
                         if (positionCount >= 3)
                         {
-                            return true;
+                            reason = "Threefold repetition";
+                            return GameResult.Draw;
                         }
                     }
                 }
@@ -332,10 +353,11 @@ namespace Engine
 
             if (halfMoveClock >= 100)
             {
-                return true;
+                reason = "Fifty-move rule";
+                return GameResult.Draw;
             }
 
-            return false;
+            return GameResult.Ongoing;
         }
 
         public bool IsMoveLegal(Move move)
@@ -499,9 +521,20 @@ namespace Engine
             return evaluation;
         }
 
-        public int Search(int depth, out Move bestMove, int alpha = int.MinValue, int beta = int.MaxValue)
+        public int Search(int depth, out Move bestMove, List<Move> allMoves, List<MoveInfo> allMovesInfo, int alpha = int.MinValue, int beta = int.MaxValue)
         {
             bestMove = null;
+            if (depth == 0)
+            {
+                return Evaluate();
+            }
+
+            GameResult result = Result(allMovesInfo, allMoves, out _);
+            if (result != GameResult.Ongoing)
+            {
+                return result == GameResult.WhiteWin ? int.MaxValue : result == GameResult.BlackWin ? int.MinValue : 0;
+            }
+
             List<Move> moves = new List<Move>();
             for (int rank = 0; rank < 8; rank++)
             {
@@ -514,26 +547,13 @@ namespace Engine
                     }
                 }
             }
-            if (moves.Count == 0)
-            {
-                if (IsInCheck(sideToMove))
-                {
-                    return sideToMove == PieceColor.White ? int.MinValue + depth : int.MaxValue - depth;
-                }
-                return 0;
-            }
-
-            if (depth == 0)
-            {
-                return Evaluate();
-            }
 
             int bestScore = sideToMove == PieceColor.White ? int.MinValue : int.MaxValue;
             foreach (Move move in moves)
             {
                 Board nextMove = Clone();
                 nextMove.MakeMove(move);
-                int score = nextMove.Search(depth - 1, out _, alpha, beta);
+                int score = nextMove.Search(depth - 1, out _, allMoves, allMovesInfo, alpha, beta);
                 if (sideToMove == PieceColor.White)
                 {
                     if (score > bestScore)

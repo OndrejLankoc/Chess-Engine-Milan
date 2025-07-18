@@ -98,6 +98,7 @@ namespace Engine
         public bool IsCastling { get; set; }
         public bool IsEnPassant { get; set; }
         public Square? EnPassantSquare { get; set; }
+        public int HalfMoveClock { get; set; }
         public bool IsPromotion { get; set; }
         public bool IsPawnMove { get; set; }
         public Piece? PromotedPiece { get; set; }
@@ -108,6 +109,7 @@ namespace Engine
             CastlingRights = [true, true, true, true];
             IsEnPassant = false;
             EnPassantSquare = null;
+            HalfMoveClock = 0;
             IsPromotion = false;
             IsPawnMove = false;
             PromotedPiece = null;
