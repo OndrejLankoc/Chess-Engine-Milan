@@ -5,7 +5,8 @@
         static void Main(string[] args)
         {
             Board board = new Board();
-            board.SetupBoard("rnbqkbnr/pppp1ppp/4p3/8/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq - 0 2");
+            board.SetupBoard();
+            Engine engine = new Engine();
 
             PieceColor playerColor = PieceColor.White;
 
@@ -43,7 +44,7 @@
                     Console.WriteLine("Computer is thinking...");
 
                     Move bestMove;
-                    board.Search(4, out bestMove, playedMoves, playedMovesInfo);
+                    engine.Search(board, 4, out bestMove, playedMoves, playedMovesInfo);
 
                     playedMovesInfo.Add(board.MakeMove(bestMove));
                     playedMoves.Add(bestMove);
@@ -52,7 +53,7 @@
                 }
             }
             GameResult result = board.Result(playedMovesInfo, playedMoves, out string reason);
-            Console.WriteLine($"{result} - {reason}");
+            Console.WriteLine($"GG\n{reason} - {result}");
         }
     }
 }

@@ -38,15 +38,7 @@ namespace Engine
                 return false;
             }
 
-            int fromFile = moveString[0] - 'a';
-            int fromRank = '8' - moveString[1];
-            int toFile = moveString[2] - 'a';
-            int toRank = '8' - moveString[3];
-
-            Square from = new Square(fromRank, fromFile);
-            Square to = new Square(toRank, toFile);
-
-            if (!from.IsOnBoard() || !to.IsOnBoard())
+            if (!Square.TryParse(moveString.Substring(0, 2), out Square from) || !Square.TryParse(moveString.Substring(2, 2), out Square to))
             {
                 move = null!;
                 return false;
@@ -100,7 +92,6 @@ namespace Engine
         public Square? EnPassantSquare { get; set; }
         public int HalfMoveClock { get; set; }
         public bool IsPromotion { get; set; }
-        public bool IsPawnMove { get; set; }
         public Piece? PromotedPiece { get; set; }
         public MoveInfo(Piece? takenPiece = null)
         {
@@ -111,7 +102,6 @@ namespace Engine
             EnPassantSquare = null;
             HalfMoveClock = 0;
             IsPromotion = false;
-            IsPawnMove = false;
             PromotedPiece = null;
         }
     }

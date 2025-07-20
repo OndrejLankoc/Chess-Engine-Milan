@@ -5,7 +5,7 @@ namespace Engine
         public static ulong[,] PieceSquare = new ulong[12, 64];
         public static ulong SideToMove;
         public static ulong[] CastlingRights = new ulong[4];
-        public static ulong[] EnPassantSquare = new ulong[8];
+        public static ulong[] EnPassantFile = new ulong[8];
 
         static Random rng = new Random(314159);
 
@@ -28,7 +28,7 @@ namespace Engine
 
             for (int i = 0; i < 8; i++)
             {
-                EnPassantSquare[i] = (ulong)rng.Next() << 32 | (ulong)rng.Next();
+                EnPassantFile[i] = (ulong)rng.Next() << 32 | (ulong)rng.Next();
             }
         }
     }

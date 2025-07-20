@@ -96,6 +96,8 @@ namespace Engine
             cloneBoard.sideToMove = sideToMove;
             cloneBoard.enPassantSquare = enPassantSquare;
             cloneBoard.castlingRights = (bool[])castlingRights.Clone();
+            cloneBoard.halfMoveClock = halfMoveClock;
+            cloneBoard.fullMoveNumber = fullMoveNumber;
 
             for (int file = 0; file < 8; file++)
             {
@@ -129,6 +131,28 @@ namespace Engine
                     }
                 }
             }
+
+            for (int i = 0; i < 4; i++)
+            {
+                if (castlingRights[i] != secondBoard.castlingRights[i])
+                {
+                    return false;
+                }
+            }
+
+            if (sideToMove != secondBoard.sideToMove || halfMoveClock != secondBoard.halfMoveClock || fullMoveNumber != secondBoard.fullMoveNumber)
+            {
+                return false;
+            }
+
+            if (enPassantSquare == null && secondBoard.enPassantSquare != null ||
+                enPassantSquare != null && secondBoard.enPassantSquare == null ||
+                enPassantSquare != null && secondBoard.enPassantSquare != null &&
+                (enPassantSquare.File != secondBoard.enPassantSquare.File || enPassantSquare.Rank != secondBoard.enPassantSquare.Rank))
+            {
+                return false;
+            }
+
             return true;
         }
 
@@ -201,20 +225,18 @@ namespace Engine
                     Squares[move.To.Rank + (piece.Color == PieceColor.White ? 1 : -1), move.To.File] = null;
                     moveInfo.IsEnPassant = true;
                 }
+            }
+            enPassantSquare = null;
 
-                enPassantSquare = null;
-
-                if (Math.Abs(move.From.Rank - move.To.Rank) == 2)
-                {
-                    enPassantSquare = new Square(move.To.Rank + (piece.Color == PieceColor.White ? 1 : -1), move.To.File);
-                }
-
-                moveInfo.IsPawnMove = true;
+            if (piece.Type == PieceType.Pawn && Math.Abs(move.From.Rank - move.To.Rank) == 2)
+            {
+                enPassantSquare = new Square(move.To.Rank + (piece.Color == PieceColor.White ? 1 : -1), move.To.File);
             }
 
             fullMoveNumber = (sideToMove == PieceColor.Black) ? fullMoveNumber + 1 : fullMoveNumber;
-            halfMoveClock = (moveInfo.IsPawnMove || moveInfo.TakenPiece != null) ? 0 : halfMoveClock + 1;
+            halfMoveClock = (piece.Type == PieceType.Pawn || moveInfo.TakenPiece != null) ? 0 : halfMoveClock + 1;
             sideToMove = (sideToMove == PieceColor.White) ? PieceColor.Black : PieceColor.White;
+
             return moveInfo;
         }
 
@@ -272,7 +294,7 @@ namespace Engine
                 {
                     if (Squares[rank, file] != null && Squares[rank, file].Color != color)
                     {
-                        List<Move> moves = Squares[rank, file].GetAttackMoves(new Square(rank, file));
+                        List<Move> moves = Squares[rank, file].GetAttackMoves(new Square(rank, file), this);
                         foreach (Move move in moves)
                         {
                             if (move.To.Rank == kingPosition.Rank && move.To.File == kingPosition.File)
@@ -334,12 +356,12 @@ namespace Engine
                 Board previousPositions = Clone();
                 int positionCount = 1;
 
-                for (int i = listOfAllMoves.Count - 1; i >= 0; i -= 2)
+                for (int i = listOfAllMoves.Count - 1; i >= 0; i--)
                 {
                     Move move = listOfAllMoves[i];
                     MoveInfo moveInfo = listOfAllMovesInfo[i];
                     previousPositions.UndoMove(move, moveInfo);
-                    if (Equals(previousPositions) && moveInfo.CastlingRights.SequenceEqual(castlingRights) && moveInfo.EnPassantSquare == enPassantSquare)
+                    if (Equals(previousPositions))
                     {
                         positionCount++;
                         if (positionCount >= 3)
@@ -379,7 +401,7 @@ namespace Engine
             return false;
         }
 
-        public double endgamePhase()
+        public double EndgamePhase()
         {
             int gamePhase = 0;
             foreach (Piece piece in Squares)
@@ -409,176 +431,44 @@ namespace Engine
             return endgamePhase;
         }
 
-        public int Evaluate()
+        public ulong ComputeHash()
         {
-            int evaluation = 0;
-            int[,] pawnSquareTable =
-            {
-                { 0, 0, 0, 0, 0, 0, 0, 0 },
-                { 50, 50, 50, 50, 50, 50, 50, 50 },
-                { 10, 10, 20, 30, 30, 20, 10, 10 },
-                { 5,  5, 10, 25, 25, 10, 5, 5 },
-                { 0, 0, 0, 20, 20, 0, 0, 0 },
-                { 5, -5, -10, 0, 0, -10, -5, 5 },
-                { 5, 10, 10, -20, -20, 10, 10, 5 },
-                { 0, 0, 0, 0, 0, 0, 0, 0 }
-            };
+            ulong hash = 0;
 
-            int[,] knightSquareTable =
-            {
-                { -50, -40, -30, -30, -30, -30, -40, -50 },
-                { -40, -20, 0, 0, 0, 0, -20, -40 },
-                { -30, 0, 10, 15, 15, 10, 0, -30 },
-                { -30, 5, 15, 20, 20, 15, 5, -30 },
-                { -30, 0, 15, 20, 20, 15, 0, -30 },
-                { -30, 5, 10, 15, 15, 10, 5, -30 },
-                { -40, -20, 0, 5, 5, 0, -20, -40 },
-                { -50, -40, -30, -30, -30, -30, -40, -50 }
-            };
-
-            int[,] bishopSquareTable =
-            {
-                { -20, -10, -10, -10, -10, -10, -10, -20 },
-                { -10, 0, 0, 0, 0, 0, 0, -10 },
-                { -10, 0, 5, 10, 10, 5, 0, -10 },
-                { -10, 5, 5, 10, 10, 5, 5, -10 },
-                { -10, 0, 10, 10, 10, 10, 0, -10 },
-                { -10, 10, 10, 10, 10, 10, 10, -10 },
-                { -10, 5, 0, 0, 0, 0, 5, -10 },
-                { -20, -10, -10, -10, -10, -10, -10, -20 }
-            };
-
-            int[,] rookSquareTable =
-            {
-                { 0, 0, 0, 0, 0, 0, 0, 0 },
-                { 5, 10, 10, 10, 10, 10, 10, 5 },
-                { -5, 0, 0, 0, 0, 0, 0, -5 },
-                { -5, 0, 0, 0, 0, 0, 0, -5 },
-                { -5, 0, 0, 0, 0, 0, 0, -5 },
-                { -5, 0, 0, 0, 0, 0, 0, -5 },
-                { -5, 0, 0, 0, 0, 0, 0, -5 },
-                { 0, 0, 0, 5, 5, 0, 0, 0 }
-            };
-
-            int[,] queenSquareTable =
-            {
-                { -20, -10, -10, -5, -5, -10, -10, -20 },
-                { -10, 0, 0, 0, 0, 0, 0, -10 },
-                { -10, 0, 5, 5, 5, 5, 0, -10 },
-                { -5, 0, 5, 5, 5, 5, 0, -5 },
-                { 0, 0, 5, 5, 5, 5, 0, -5 },
-                { -10, 5, 5, 5, 5, 5, 0, -10 },
-                { -10, 0, 5, 0, 0, 0, 0, -10 },
-                { -20, -10, -10, -5, -5, -10, -10, -20 }
-            };
-
-            int[,] mgKingSquareTable =
-            {
-                { -30, -40, -40, -50, -50, -40, -40, -30 },
-                { -30, -40, -40, -50, -50, -40, -40, -30 },
-                { -30, -40, -40, -50, -50, -40, -40, -30 },
-                { -30, -40, -40, -50, -50, -40, -40, -30 },
-                { -20, -30, -30, -40, -40, -30, -30, -20 },
-                { -10, -20, -20, -20, -20, -20, -20, -10 },
-                { 20, 20, 0, 0, 0, 0, 20, 20 },
-                { 20, 30, 10, 0, 0, 10, 30, 20 }
-            };
-
-            int[,] egKingSquareTable =
-            {
-                { -50, -40, -30, -20, -20, -30, -40, -50 },
-                { -30, -20, -10, 0, 0, -10, -20, -30 },
-                { -30, -10, 20, 30, 30, 20, -10, -30 },
-                { -30, -10, 30, 40, 40, 30, -10, -30 },
-                { -30, -10, 30, 40, 40, 30, -10, -30 },
-                { -30, -10, 20, 30, 30, 20, -10, -30 },
-                { -30, -30, 0, 0, 0, 0, -30, -30 },
-                { -50, -30, -30, -30, -30, -30, -30, -50 }
-            };
-
-            for (int file = 0; file < 8; file++)
-            {
-                for (int rank = 0; rank < 8; rank++)
-                {
-                    Piece piece = Squares[rank, file];
-                    if (piece != null)
-                    {
-                        int rankIndex = (piece.Color == PieceColor.White) ? rank : 7 - rank;
-                        evaluation += (piece.Color == PieceColor.White ? 1 : -1) *
-                        (piece.Type switch
-                        {
-                            PieceType.Pawn => 100 + pawnSquareTable[rankIndex, file],
-                            PieceType.Knight => 320 + knightSquareTable[rankIndex, file],
-                            PieceType.Bishop => 330 + bishopSquareTable[rankIndex, file],
-                            PieceType.Rook => 500 + rookSquareTable[rankIndex, file],
-                            PieceType.Queen => 900 + queenSquareTable[rankIndex, file],
-                            PieceType.King => 20000 + (int)((1 - endgamePhase()) * mgKingSquareTable[rankIndex, file] + endgamePhase() * egKingSquareTable[rankIndex, file]),
-                            _ => 0
-                        });
-                    }
-                }
-            }
-            return evaluation;
-        }
-
-        public int Search(int depth, out Move bestMove, List<Move> allMoves, List<MoveInfo> allMovesInfo, int alpha = int.MinValue, int beta = int.MaxValue)
-        {
-            bestMove = null;
-            if (depth == 0)
-            {
-                return Evaluate();
-            }
-
-            GameResult result = Result(allMovesInfo, allMoves, out _);
-            if (result != GameResult.Ongoing)
-            {
-                return result == GameResult.WhiteWin ? int.MaxValue : result == GameResult.BlackWin ? int.MinValue : 0;
-            }
-
-            List<Move> moves = new List<Move>();
             for (int rank = 0; rank < 8; rank++)
             {
                 for (int file = 0; file < 8; file++)
                 {
                     Piece piece = Squares[rank, file];
-                    if (piece != null && piece.Color == sideToMove)
+                    if (piece != null)
                     {
-                        moves.AddRange(piece.GetLegalMoves(this, new Square(rank, file), castlingRights, enPassantSquare));
+                        int type = piece.Color == PieceColor.Black ? 6 : 0;
+                        type += (int)piece.Type;
+                        int square = rank * 8 + file;
+                        hash ^= Hash.PieceSquare[type, square];
                     }
                 }
             }
 
-            int bestScore = sideToMove == PieceColor.White ? int.MinValue : int.MaxValue;
-            foreach (Move move in moves)
+            if (sideToMove == PieceColor.White)
             {
-                Board nextMove = Clone();
-                nextMove.MakeMove(move);
-                int score = nextMove.Search(depth - 1, out _, allMoves, allMovesInfo, alpha, beta);
-                if (sideToMove == PieceColor.White)
-                {
-                    if (score > bestScore)
-                    {
-                        bestScore = score;
-                        bestMove = move;
-                    }
-                    alpha = Math.Max(alpha, bestScore);
-                }
-                else
-                {
-                    if (score < bestScore)
-                    {
-                        bestScore = score;
-                        bestMove = move;
-                    }
-                    beta = Math.Min(beta, bestScore);
-                }
+                hash ^= Hash.SideToMove;
+            }
 
-                if (alpha >= beta)
+            for (int i = 0; i < 4; i++)
+            {
+                if (castlingRights[i])
                 {
-                    break;
+                    hash ^= Hash.CastlingRights[i];
                 }
             }
-            return bestScore;
+
+            if (enPassantSquare != null)
+            {
+                hash ^= Hash.EnPassantFile[enPassantSquare.File];
+            }
+
+            return hash;
         }
     }
 }

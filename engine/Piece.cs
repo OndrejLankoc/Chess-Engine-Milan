@@ -242,38 +242,41 @@ namespace Engine
             return moves;
         }
 
-        public List<Move> GetAttackMoves(Square positionOfPiece)
+        public List<Move> GetAttackMoves(Square positionOfPiece, Board board)
         {
             List<Move> attackMoves = new List<Move>();
             switch (Type)
             {
                 case PieceType.Pawn:
                     int direction = (Color == PieceColor.White) ? -1 : 1;
-                    attackMoves.Add(new Move(positionOfPiece, new Square(positionOfPiece.Rank + direction, positionOfPiece.File - 1)));
-                    attackMoves.Add(new Move(positionOfPiece, new Square(positionOfPiece.Rank + direction, positionOfPiece.File + 1)));
+                    Square leftAttack = new Square(positionOfPiece.Rank + direction, positionOfPiece.File - 1);
+                    Square rightAttack = new Square(positionOfPiece.Rank + direction, positionOfPiece.File + 1);
+                    
+                    if (leftAttack.IsOnBoard())
+                    {
+                        attackMoves.Add(new Move(positionOfPiece, leftAttack));
+                    }
+                    if (rightAttack.IsOnBoard())
+                    {
+                        attackMoves.Add(new Move(positionOfPiece, rightAttack));
+                    }
+
                     break;
 
                 case PieceType.Knight:
-                    int[,] relativePositions = { { -1, 2 }, { 1, 2 }, { 2, 1 }, { 2, -1 }, { 1, -2 }, { -1, -2 }, { -2, -1 }, { -2, 1 } };
-                    for (int i = 0; i < relativePositions.GetLength(0); i++)
-                    {
-                        attackMoves.Add(new Move(positionOfPiece, new Square(positionOfPiece.Rank + relativePositions[i, 1], positionOfPiece.File + relativePositions[i, 0])));
-                    }
+                    attackMoves.AddRange(GetKnightMoves(board, positionOfPiece));
                     break;
 
                 case PieceType.Bishop:
-                    int[,] bishopRelativePositions = { { 1, 1 }, { 1, -1 }, { -1, -1 }, { -1, 1 } };
-                    attackMoves.AddRange(GetAttackMovesOfBRQ(positionOfPiece, bishopRelativePositions));
+                    attackMoves.AddRange(GetBishopMoves(board, positionOfPiece));
                     break;
 
                 case PieceType.Rook:
-                    int[,] rookRelativePositions = { { 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 } };
-                    attackMoves.AddRange(GetAttackMovesOfBRQ(positionOfPiece, rookRelativePositions));
+                    attackMoves.AddRange(GetRookMoves(board, positionOfPiece));
                     break;
 
                 case PieceType.Queen:
-                    int[,] queenRelativePositions = { { 1, 1 }, { 1, -1 }, { -1, -1 }, { -1, 1 }, { 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 } };
-                    attackMoves.AddRange(GetAttackMovesOfBRQ(positionOfPiece, queenRelativePositions));
+                    attackMoves.AddRange(GetQueenMoves(board, positionOfPiece));
                     break;
 
                 case PieceType.King:
@@ -290,23 +293,6 @@ namespace Engine
                         }
                     }
                     break;
-            }
-            return attackMoves;
-        }
-
-        private List<Move> GetAttackMovesOfBRQ(Square positionOfPiece, int[,] relativePositions)
-        {
-            List<Move> attackMoves = new List<Move>();
-            for (int i = 0; i < relativePositions.GetLength(0); i++)
-            {
-                Square destination = new Square(positionOfPiece.Rank + relativePositions[i, 1], positionOfPiece.File + relativePositions[i, 0]);
-                int multiplier = 1;
-                while (destination.IsOnBoard())
-                {
-                    attackMoves.Add(new Move(positionOfPiece, destination));
-                    multiplier++;
-                    destination = new Square(positionOfPiece.Rank + relativePositions[i, 1] * multiplier, positionOfPiece.File + relativePositions[i, 0] * multiplier);
-                }
             }
             return attackMoves;
         }
