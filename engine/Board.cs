@@ -330,6 +330,9 @@ namespace Engine
                     reason = "Checkmate";
                     return sideToMove == PieceColor.White ? GameResult.BlackWin : GameResult.WhiteWin;
                 }
+
+                reason = "Stalemate";
+                return GameResult.Draw;
             }
 
             int pieceCount = 0;

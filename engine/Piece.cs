@@ -1,14 +1,14 @@
 namespace Engine
 {
     public enum PieceType
-{
-    Pawn,
-    Knight,
-    Bishop,
-    Rook,
-    Queen,
-    King
-}
+    {
+        Pawn,
+        Knight,
+        Bishop,
+        Rook,
+        Queen,
+        King
+    }
     public enum PieceColor
     {
         White,
@@ -23,6 +23,20 @@ namespace Engine
         {
             Type = type;
             Color = color;
+        }
+
+        public static int GetValue(PieceType type)
+        {
+            return type switch
+            {
+                PieceType.Pawn => 100,
+                PieceType.Knight => 320,
+                PieceType.Bishop => 330,
+                PieceType.Rook => 500,
+                PieceType.Queen => 900,
+                PieceType.King => 20000,
+                _ => 0
+            };
         }
 
         public List<Move> GetLegalMoves(Board originalBoard, Square positionOfPiece, bool[] castlingRights, Square? enPassantSquare = null)

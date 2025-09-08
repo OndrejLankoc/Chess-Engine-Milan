@@ -100,14 +100,14 @@ namespace Engine
                     {
                         int rankIndex = (piece.Color == PieceColor.White) ? rank : 7 - rank;
                         evaluation += (piece.Color == PieceColor.White ? 1 : -1) *
-                        (piece.Type switch
+                        (Piece.GetValue(piece.Type) + piece.Type switch
                         {
-                            PieceType.Pawn => 100 + pawnSquareTable[rankIndex, file],
-                            PieceType.Knight => 320 + knightSquareTable[rankIndex, file],
-                            PieceType.Bishop => 330 + bishopSquareTable[rankIndex, file],
-                            PieceType.Rook => 500 + rookSquareTable[rankIndex, file],
-                            PieceType.Queen => 900 + queenSquareTable[rankIndex, file],
-                            PieceType.King => 20000 + (int)((1 - board.EndgamePhase()) * mgKingSquareTable[rankIndex, file] + board.EndgamePhase() * egKingSquareTable[rankIndex, file]),
+                            PieceType.Pawn => pawnSquareTable[rankIndex, file],
+                            PieceType.Knight => knightSquareTable[rankIndex, file],
+                            PieceType.Bishop => bishopSquareTable[rankIndex, file],
+                            PieceType.Rook => rookSquareTable[rankIndex, file],
+                            PieceType.Queen => queenSquareTable[rankIndex, file],
+                            PieceType.King => (int)((1 - board.EndgamePhase()) * mgKingSquareTable[rankIndex, file] + board.EndgamePhase() * egKingSquareTable[rankIndex, file]),
                             _ => 0
                         });
                     }
@@ -119,15 +119,29 @@ namespace Engine
         public int Search(Board board, int depth, out Move bestMove, List<Move> allMoves, List<MoveInfo> allMovesInfo, int alpha = int.MinValue, int beta = int.MaxValue)
         {
             bestMove = null;
-            if (depth == 0)
-            {
-                return Evaluate(board);
-            }
-
             GameResult result = board.Result(allMovesInfo, allMoves, out _);
             if (result != GameResult.Ongoing)
             {
                 return result == GameResult.WhiteWin ? int.MaxValue : result == GameResult.BlackWin ? int.MinValue : 0;
+            }
+
+            List<Move> moves = new List<Move>();
+            for (int rank = 0; rank < 8; rank++)
+            {
+                for (int file = 0; file < 8; file++)
+                {
+                    Piece piece = board.Squares[rank, file];
+                    if (piece != null && piece.Color == board.sideToMove)
+                    {
+                        moves.AddRange(piece.GetLegalMoves(board, new Square(rank, file), board.castlingRights, board.enPassantSquare));
+                    }
+                }
+            }
+            moves = Move.MVV_LVA(moves,board);
+
+            if (depth == 0 || moves.Count == 0)
+            {
+                return Evaluate(board);
             }
 
             int alphaOriginal = alpha;
@@ -151,19 +165,6 @@ namespace Engine
                 {
                     bestMove = entry.BestMove;
                     return entry.Score;
-                }
-            }
-
-            List<Move> moves = new List<Move>();
-            for (int rank = 0; rank < 8; rank++)
-            {
-                for (int file = 0; file < 8; file++)
-                {
-                    Piece piece = board.Squares[rank, file];
-                    if (piece != null && piece.Color == board.sideToMove)
-                    {
-                        moves.AddRange(piece.GetLegalMoves(board, new Square(rank, file), board.castlingRights, board.enPassantSquare));
-                    }
                 }
             }
 
