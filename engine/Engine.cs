@@ -122,7 +122,7 @@ namespace Engine
             GameResult result = board.Result(allMovesInfo, allMoves, out _);
             if (result != GameResult.Ongoing)
             {
-                return result == GameResult.WhiteWin ? int.MaxValue : result == GameResult.BlackWin ? int.MinValue : 0;
+                return result == GameResult.WhiteWin ? int.MaxValue - 1 : result == GameResult.BlackWin ? int.MinValue + 1 : 0;
             }
 
             List<Move> moves = new List<Move>();
@@ -168,7 +168,7 @@ namespace Engine
                 }
             }
 
-            int bestScore = board.sideToMove == PieceColor.White ? int.MinValue + 1 : int.MaxValue - 1;
+            int bestScore = board.sideToMove == PieceColor.White ? int.MinValue : int.MaxValue;
             foreach (Move move in moves)
             {
                 Board nextMove = board.Clone();
