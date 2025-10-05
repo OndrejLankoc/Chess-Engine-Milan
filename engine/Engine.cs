@@ -2,7 +2,7 @@ namespace Engine
 {
     public class Engine
     {
-        private TranspositionTable tt = new();
+        public TranspositionTable TT = new();
 
         public int Evaluate(Board board)
         {
@@ -146,25 +146,51 @@ namespace Engine
 
             int alphaOriginal = alpha;
             ulong hash = board.ComputeHash();
-            if (tt.TryGet(hash, out TranspositionTableEntry entry) && entry.Depth >= depth)
+            if (TT.TryGet(hash, out TranspositionTableEntry entry))
             {
-                switch (entry.Type)
+                if (entry.Depth >= depth)
                 {
-                    case NodeType.Exact:
+                    switch (entry.Type)
+                    {
+                        case NodeType.Exact:
+                            return entry.Score;
+
+                        case NodeType.LowerBound:
+                            alpha = Math.Max(alpha, entry.Score);
+                            break;
+
+                        case NodeType.UpperBound:
+                            beta = Math.Min(beta, entry.Score);
+                            break;
+                    }
+
+                    if (alpha >= beta)
+                    {
+                        bestMove = entry.BestMove;
                         return entry.Score;
-
-                    case NodeType.LowerBound:
-                        alpha = Math.Max(alpha, entry.Score);
-                        break;
-
-                    case NodeType.UpperBound:
-                        beta = Math.Min(beta, entry.Score);
-                        break;
+                    }
                 }
-                if (alpha >= beta)
+
+                else
                 {
-                    bestMove = entry.BestMove;
-                    return entry.Score;
+                    if (entry.Type == NodeType.Exact)
+                    {
+                        alpha = Math.Max(alpha, entry.Score);
+                        beta = Math.Min(beta, entry.Score);
+                        moves.Remove(entry.BestMove);
+                        moves.Insert(0, entry.BestMove);
+                    }
+
+                    else if (entry.Type == NodeType.LowerBound)
+                    {
+                        moves.Remove(entry.BestMove);
+                        moves.Insert(0, entry.BestMove);
+                    }
+                    else if (entry.Type == NodeType.UpperBound)
+                    {
+                        moves.Remove(entry.BestMove);
+                        moves.Add(entry.BestMove);
+                    }
                 }
             }
 
@@ -203,16 +229,20 @@ namespace Engine
                 }
             }
 
-            NodeType nodeType = NodeType.Exact;
-            if (bestScore <= alphaOriginal)
+            if (depth >= 2)
             {
-                nodeType = NodeType.UpperBound;
+                NodeType nodeType = NodeType.Exact;
+                if (bestScore <= alphaOriginal)
+                {
+                    nodeType = NodeType.UpperBound;
+                }
+                else if (bestScore >= beta)
+                {
+                    nodeType = NodeType.LowerBound;
+                }
+
+                TT.Store(hash, depth, bestScore, nodeType, bestMove, board.halfMoveClock);
             }
-            else if (bestScore >= beta)
-            {
-                nodeType = NodeType.LowerBound;
-            }
-            tt.Store(hash, depth, bestScore, nodeType, bestMove);
 
             return bestScore;
         }

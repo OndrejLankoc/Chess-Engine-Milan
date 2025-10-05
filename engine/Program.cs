@@ -43,11 +43,12 @@
                 {
                     Console.WriteLine("Computer is thinking...");
 
-                    Move bestMove;
-                    engine.Search(board, 4, out bestMove, playedMoves, playedMovesInfo);
+                    engine.Search(board, 4, out Move bestMove, playedMoves, playedMovesInfo);
 
                     playedMovesInfo.Add(board.MakeMove(bestMove));
                     playedMoves.Add(bestMove);
+
+                    engine.TT.ClearOldEntries(board.halfMoveClock);
 
                     Console.WriteLine($"{bestMove.ToString()}");
                 }
