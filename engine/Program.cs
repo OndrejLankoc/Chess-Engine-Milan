@@ -4,57 +4,60 @@
     {
         static void Main(string[] args)
         {
-            Board board = new Board();
-            board.SetupBoard();
-            Engine engine = new Engine();
+            Uci uci = new Uci();
+            uci.Run();
 
-            PieceColor playerColor = PieceColor.White;
+            // Board board = new Board();
+            // board.SetupBoard();
+            // Engine engine = new Engine();
 
-            List<Move> playedMoves = new List<Move>();
-            List<MoveInfo> playedMovesInfo = new List<MoveInfo>();
+            // PieceColor playerColor = PieceColor.White;
 
-            while (board.Result(playedMovesInfo, playedMoves, out _) == GameResult.Ongoing)
-            {
-                if (board.sideToMove == playerColor)
-                {
-                    Move move;
-                    while (true)
-                    {
-                        Console.WriteLine("Enter your move");
-                        string input = Console.ReadLine();
-                        if (!Move.TryParse(board.sideToMove, input, out move))
-                        {
-                            Console.WriteLine("Invalid move format. Please try again.");
-                            continue;
-                        }
-                        if (!board.IsMoveLegal(move))
-                        {
-                            Console.WriteLine("Illegal move. Please try again.");
-                            continue;
-                        }
-                        break;
-                    }
+            // List<Move> playedMoves = new List<Move>();
+            // List<MoveInfo> playedMovesInfo = new List<MoveInfo>();
 
-                    playedMovesInfo.Add(board.MakeMove(move));
-                    playedMoves.Add(move);
-                }
+            // while (board.Result(playedMovesInfo, playedMoves, out _) == GameResult.Ongoing)
+            // {
+            //     if (board.sideToMove == playerColor)
+            //     {
+            //         Move move;
+            //         while (true)
+            //         {
+            //             Console.WriteLine("Enter your move");
+            //             string input = Console.ReadLine();
+            //             if (!Move.TryParse(board.sideToMove, input, out move))
+            //             {
+            //                 Console.WriteLine("Invalid move format. Please try again.");
+            //                 continue;
+            //             }
+            //             if (!board.IsMoveLegal(move))
+            //             {
+            //                 Console.WriteLine("Illegal move. Please try again.");
+            //                 continue;
+            //             }
+            //             break;
+            //         }
 
-                else
-                {
-                    Console.WriteLine("Computer is thinking...");
+            //         playedMovesInfo.Add(board.MakeMove(move));
+            //         playedMoves.Add(move);
+            //     }
 
-                    engine.Search(board, 4, out Move bestMove, playedMoves, playedMovesInfo);
+            //     else
+            //     {
+            //         Console.WriteLine("Computer is thinking...");
 
-                    playedMovesInfo.Add(board.MakeMove(bestMove));
-                    playedMoves.Add(bestMove);
+            //         engine.Search(board, 4, out Move bestMove, playedMoves, playedMovesInfo);
 
-                    engine.TT.ClearOldEntries(board.halfMoveClock);
+            //         playedMovesInfo.Add(board.MakeMove(bestMove));
+            //         playedMoves.Add(bestMove);
 
-                    Console.WriteLine($"{bestMove.ToString()}");
-                }
-            }
-            GameResult result = board.Result(playedMovesInfo, playedMoves, out string reason);
-            Console.WriteLine($"GG\n{reason} - {result}");
+            //         engine.TT.ClearOldEntries(board.halfMoveClock);
+
+            //         Console.WriteLine($"{bestMove.ToString()}");
+            //     }
+            // }
+            // GameResult result = board.Result(playedMovesInfo, playedMoves, out string reason);
+            // Console.WriteLine($"GG\n{reason} - {result}");
         }
     }
 }

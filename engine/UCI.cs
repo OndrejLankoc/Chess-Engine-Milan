@@ -35,8 +35,6 @@ namespace Engine
                     case string s when s.StartsWith("go"):
                         engine.Search(board, 4, out Move bestMove, PlayedMoves, PlayedMovesInfo);
 
-                        PlayedMovesInfo.Add(board.MakeMove(bestMove));
-                        PlayedMoves.Add(bestMove);
                         engine.TT.ClearOldEntries(board.halfMoveClock);
 
                         Console.WriteLine($"bestmove {bestMove.ToString()}");
@@ -50,6 +48,9 @@ namespace Engine
 
         private void HandlePosition(string input)
         {
+            PlayedMoves.Clear();
+            PlayedMovesInfo.Clear();
+
             if (input.Contains("startpos"))
             {
                 board.SetupBoard();
@@ -60,6 +61,13 @@ namespace Engine
                     foreach (string move in moves.Split(' '))
                     {
                         Move.TryParse(board.sideToMove, move, out Move parsedMove);
+
+                        if (!board.IsMoveLegal(parsedMove))
+                        {
+                            Console.WriteLine("Illegal move in UCI input.");
+                            Environment.Exit(1);
+                        }
+
                         PlayedMovesInfo.Add(board.MakeMove(parsedMove));
                         PlayedMoves.Add(parsedMove);
                     }
