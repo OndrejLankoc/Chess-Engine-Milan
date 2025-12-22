@@ -173,6 +173,8 @@ namespace Engine
                     }
                 }
             }
+
+            evaluation += Mobility(board);
             return evaluation;
         }
 
@@ -197,7 +199,7 @@ namespace Engine
                     }
                 }
             }
-            moves = Move.MVV_LVA(moves,board);
+            moves = Move.MVV_LVA(moves, board);
 
             if (depth == 0 || moves.Count == 0)
             {
@@ -235,19 +237,29 @@ namespace Engine
                 {
                     if (entry.Type == NodeType.Exact)
                     {
-                        alpha = Math.Max(alpha, entry.Score);
-                        beta = Math.Min(beta, entry.Score);
                         moves.Remove(entry.BestMove);
                         moves.Insert(0, entry.BestMove);
                     }
 
                     else if (entry.Type == NodeType.LowerBound)
                     {
+                        if (entry.Score > alpha)
+                        {
+                            int margin = (depth - entry.Depth) * 50;
+                            alpha = Math.Max(alpha, entry.Score - margin);
+                        }
+
                         moves.Remove(entry.BestMove);
                         moves.Insert(0, entry.BestMove);
                     }
                     else if (entry.Type == NodeType.UpperBound)
                     {
+                        if (entry.Score < beta)
+                        {
+                            int margin = (depth - entry.Depth) * 50;
+                            beta = Math.Min(beta, entry.Score + margin);
+                        }
+
                         moves.Remove(entry.BestMove);
                         moves.Add(entry.BestMove);
                     }
@@ -305,6 +317,47 @@ namespace Engine
             }
 
             return bestScore;
+        }
+        
+        private int Mobility(Board board)
+        {
+            int mobility = 0;
+            for (int file = 0; file < 8; file++)
+            {
+                for (int rank = 0; rank < 8; rank++)
+                {
+                    Square startSquare = new Square(rank, file);
+                    Piece? piece = board.GetPiece(startSquare);
+                    if (piece != null && piece.Type != PieceType.King && piece.Type != PieceType.Pawn)
+                    {
+                        List<Move> moves = piece.GetMoves(board, startSquare, board.castlingRights, board.enPassantSquare);
+                        int movesCount = moves.Count;
+
+                        if (movesCount > 0)
+                        {
+                            int mgMobilityWeight = piece.Type switch
+                            {
+                                PieceType.Knight => 5,
+                                PieceType.Bishop => 4,
+                                PieceType.Rook => 2,
+                                PieceType.Queen => 1
+                            };
+                            int egMobilityWeight = piece.Type switch
+                            {
+                                PieceType.Knight => 3,
+                                PieceType.Bishop => 3,
+                                PieceType.Rook => 3,
+                                PieceType.Queen => 2
+                            };
+
+                            int mobilityWeight = (int)((1 - board.EndgamePhase()) * mgMobilityWeight + board.EndgamePhase() * egMobilityWeight);
+                            mobility += (piece.Color == PieceColor.White ? 1 : -1) * movesCount * mobilityWeight;
+                        }
+                    }
+                }
+            }
+
+            return mobility;
         }
     }
 }

@@ -294,17 +294,23 @@ namespace Engine
         public bool IsInCheck(PieceColor color)
         {
             Square kingPosition = GetKingPosition(color);
+            return IsSquareAttacked(kingPosition, color == PieceColor.White ? PieceColor.Black : PieceColor.White);
+        }
+
+        public bool IsSquareAttacked(Square square, PieceColor attackerColor)
+        {
             for (int file = 0; file < 8; file++)
             {
                 for (int rank = 0; rank < 8; rank++)
                 {
-                    Square square = new Square(rank, file);
-                    if (GetPiece(square) != null && GetPiece(square)!.Color != color)
+                    Square attackerSquare = new Square(rank, file);
+                    Piece? attacker = GetPiece(attackerSquare);
+                    if (attacker != null && attacker.Color == attackerColor)
                     {
-                        List<Move> moves = GetPiece(square)!.GetAttackMoves(new Square(rank, file), this);
-                        foreach (Move move in moves)
+                        List<Move> attackMoves = attacker.GetAttackMoves(attackerSquare, this);
+                        foreach (Move attackMove in attackMoves)
                         {
-                            if (move.To.Rank == kingPosition.Rank && move.To.File == kingPosition.File)
+                            if (attackMove.To.Rank == square.Rank && attackMove.To.File == square.File)
                             {
                                 return true;
                             }
