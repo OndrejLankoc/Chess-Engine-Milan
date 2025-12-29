@@ -15,6 +15,7 @@ namespace Engine
         public PieceColor sideToMove = PieceColor.White;
         public int halfMoveClock = 0;
         public int fullMoveNumber = 1;
+        public ulong boardHash;
 
         public void SetupBoard(string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
         {
@@ -72,6 +73,10 @@ namespace Engine
                         throw new ArgumentException($"Invalid en passant square: {fenParts[3]}");
                     }
                 }
+                else
+                {
+                    enPassantSquare = null;
+                }
 
                 if (!int.TryParse(fenParts[4], out halfMoveClock) || halfMoveClock < 0)
                 {
@@ -88,6 +93,8 @@ namespace Engine
                 Console.WriteLine(e.Message);
                 Environment.Exit(1);
             }
+
+            boardHash = ComputeHash();
         }
 
         public Board Clone()
@@ -98,7 +105,8 @@ namespace Engine
                 enPassantSquare = enPassantSquare,
                 castlingRights = (bool[])castlingRights.Clone(),
                 halfMoveClock = halfMoveClock,
-                fullMoveNumber = fullMoveNumber
+                fullMoveNumber = fullMoveNumber,
+                boardHash = boardHash
             };
 
             for (int file = 0; file < 8; file++)
@@ -117,6 +125,11 @@ namespace Engine
 
         public bool Equals(Board secondBoard)
         {
+            if (secondBoard.boardHash != boardHash)
+            {
+                return false;
+            }
+            
             for (int file = 0; file < 8; file++)
             {
                 for (int rank = 0; rank < 8; rank++)
@@ -191,14 +204,31 @@ namespace Engine
             {
                 CastlingRights = (bool[])castlingRights.Clone(),
                 EnPassantSquare = enPassantSquare,
-                HalfMoveClock = halfMoveClock
+                HalfMoveClock = halfMoveClock,
+                BoardHash = boardHash
             };
             Squares[move.To.Rank, move.To.File] = piece;
             Squares[move.From.Rank, move.From.File] = null;
 
+            int pieceType = (piece.Color == PieceColor.Black ? 6 : 0) + (int)piece.Type;
+            int squareIndex = move.From.Rank * 8 + move.From.File;
+            boardHash ^= Hash.PieceSquare[pieceType, squareIndex];
+            if (moveInfo.TakenPiece != null)
+            {
+                int takenPieceType = (moveInfo.TakenPiece.Color == PieceColor.Black ? 6 : 0) + (int)moveInfo.TakenPiece.Type;
+                squareIndex = move.To.Rank * 8 + move.To.File;
+                boardHash ^= Hash.PieceSquare[takenPieceType, squareIndex];
+            }
+            squareIndex = move.To.Rank * 8 + move.To.File;
+            boardHash ^= Hash.PieceSquare[pieceType, squareIndex];
+
             if (piece.Type == PieceType.King)
             {
-                castlingRights[(piece.Color == PieceColor.White) ? 0 : 2] = castlingRights[(piece.Color == PieceColor.White) ? 1 : 3] = false;
+                int[] castlingIndex = (piece.Color == PieceColor.White) ? new[] { 0, 1 } : new[] { 2, 3 };
+                boardHash ^= castlingRights[castlingIndex[0]] ? Hash.CastlingRights[castlingIndex[0]] : 0;
+                boardHash ^= castlingRights[castlingIndex[1]] ? Hash.CastlingRights[castlingIndex[1]] : 0;
+                castlingRights[castlingIndex[0]] = castlingRights[castlingIndex[1]] = false;
+
                 if (Math.Abs(move.From.File - move.To.File) == 2)
                 {
                     int rank = (piece.Color == PieceColor.White) ? 7 : 0;
@@ -206,13 +236,32 @@ namespace Engine
                     Squares[rank, files[1]] = Squares[rank, files[0]];
                     Squares[rank, files[0]] = null;
                     moveInfo.IsCastling = true;
+
+                    pieceType = (piece.Color == PieceColor.Black ? 6 : 0) + (int)PieceType.Rook;
+                    squareIndex = rank * 8 + files[0];
+                    boardHash ^= Hash.PieceSquare[pieceType, squareIndex];
+                    squareIndex = rank * 8 + files[1];
+                    boardHash ^= Hash.PieceSquare[pieceType, squareIndex];
                 }
             }
 
             if (piece.Type == PieceType.Rook)
             {
-                int i = ((piece.Color == PieceColor.White) ? 0 : 2) + ((move.From.File == 7) ? 0 : 1);
-                castlingRights[i] = false;
+                int i = -1;
+                if (move.From.File == 7 && (move.From.Rank == 7 || move.From.Rank == 0))
+                {
+                    i += 1;
+                }
+                if (move.From.File == 0 && (move.From.Rank == 7 || move.From.Rank == 0))
+                {
+                    i += 2;
+                }
+                if (i >= 0)
+                {
+                    i += piece.Color == PieceColor.White ? 0 : 2;
+                    boardHash ^= castlingRights[i] ? Hash.CastlingRights[i] : 0;
+                    castlingRights[i] = false;
+                }
             }
 
             if (piece.Type == PieceType.Pawn)
@@ -223,24 +272,56 @@ namespace Engine
                     Squares[move.To.Rank, move.To.File] = move.PromotedPiece;
                     moveInfo.IsPromotion = true;
                     moveInfo.PromotedPiece = move.PromotedPiece;
+
+                    pieceType = (piece.Color == PieceColor.Black ? 6 : 0) + (int)PieceType.Pawn;
+                    squareIndex = move.To.Rank * 8 + move.To.File;
+                    boardHash ^= Hash.PieceSquare[pieceType, squareIndex];
+                    pieceType = (piece.Color == PieceColor.Black ? 6 : 0) + (int)move.PromotedPiece!.Type;
+                    boardHash ^= Hash.PieceSquare[pieceType, squareIndex];
                 }
 
                 if (enPassantSquare != null && enPassantSquare.File == move.To.File && enPassantSquare.Rank == move.To.Rank)
                 {
+                    Piece capturedPawn = GetPiece(new Square(move.To.Rank + (piece.Color == PieceColor.White ? 1 : -1), move.To.File))!;
+                    int capturedPawnType = (capturedPawn.Color == PieceColor.Black ? 6 : 0) + (int)capturedPawn.Type;
+                    squareIndex = (move.To.Rank + (piece.Color == PieceColor.White ? 1 : -1)) * 8 + move.To.File;
+                    boardHash ^= Hash.PieceSquare[capturedPawnType, squareIndex];
+
                     Squares[move.To.Rank + (piece.Color == PieceColor.White ? 1 : -1), move.To.File] = null;
                     moveInfo.IsEnPassant = true;
                 }
+            }
+
+            if (enPassantSquare != null)
+            {
+                boardHash ^= Hash.EnPassantFile[enPassantSquare.File];
             }
             enPassantSquare = null;
 
             if (piece.Type == PieceType.Pawn && Math.Abs(move.From.Rank - move.To.Rank) == 2)
             {
                 enPassantSquare = new Square(move.To.Rank + (piece.Color == PieceColor.White ? 1 : -1), move.To.File);
+                boardHash ^= Hash.EnPassantFile[enPassantSquare.File];
+            }
+
+            List<Square> cornerSquares = new List<Square>
+            {
+                new Square(7, 7),
+                new Square(7, 0),
+                new Square(0, 7),
+                new Square(0, 0)
+            };
+            if (moveInfo.TakenPiece != null && moveInfo.TakenPiece.Type == PieceType.Rook && cornerSquares.Contains(move.To))
+            {
+                int i = cornerSquares.IndexOf(move.To);
+                boardHash ^= castlingRights[i] ? Hash.CastlingRights[i] : 0;
+                castlingRights[i] = false;
             }
 
             fullMoveNumber = (sideToMove == PieceColor.Black) ? fullMoveNumber + 1 : fullMoveNumber;
             halfMoveClock = (piece.Type == PieceType.Pawn || moveInfo.TakenPiece != null) ? 0 : halfMoveClock + 1;
             sideToMove = (sideToMove == PieceColor.White) ? PieceColor.Black : PieceColor.White;
+            boardHash ^= Hash.SideToMove;
 
             return moveInfo;
         }
@@ -273,6 +354,7 @@ namespace Engine
             sideToMove = (sideToMove == PieceColor.White) ? PieceColor.Black : PieceColor.White;
             halfMoveClock = moveInfo.HalfMoveClock;
             fullMoveNumber = (sideToMove == PieceColor.Black) ? fullMoveNumber - 1 : fullMoveNumber;
+            boardHash = moveInfo.BoardHash;
         }
 
         public Square GetKingPosition(PieceColor color)

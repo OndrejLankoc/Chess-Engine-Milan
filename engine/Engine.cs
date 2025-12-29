@@ -207,8 +207,7 @@ namespace Engine
             }
 
             int alphaOriginal = alpha;
-            ulong hash = board.ComputeHash();
-            if (TT.TryGet(hash, out TranspositionTableEntry entry))
+            if (TT.TryGet(board.boardHash, out TranspositionTableEntry entry))
             {
                 if (entry.Depth >= depth)
                 {
@@ -313,12 +312,12 @@ namespace Engine
                     nodeType = NodeType.LowerBound;
                 }
 
-                TT.Store(hash, depth, bestScore, nodeType, bestMove, board.halfMoveClock);
+                TT.Store(board.boardHash, depth, bestScore, nodeType, bestMove, board.halfMoveClock);
             }
 
             return bestScore;
         }
-        
+
         private int Mobility(Board board)
         {
             int mobility = 0;
@@ -358,6 +357,15 @@ namespace Engine
             }
 
             return mobility;
+        }
+
+        private int PawnStructure(Board board)
+        {
+            int score = 0;
+
+
+
+            return score;
         }
     }
 }

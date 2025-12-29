@@ -128,6 +128,7 @@ namespace Engine
         public int HalfMoveClock { get; set; }
         public bool IsPromotion { get; set; }
         public Piece? PromotedPiece { get; set; }
+        public ulong BoardHash { get; set; }
         public MoveInfo(Piece? takenPiece = null)
         {
             TakenPiece = takenPiece;
