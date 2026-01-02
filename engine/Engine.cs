@@ -3,6 +3,7 @@ namespace Engine
     public class Engine
     {
         public TranspositionTable TT = new();
+        public PawnTTEntry[] PawnTT = new PawnTTEntry[1 << 16];
 
         public int Evaluate(Board board)
         {
@@ -155,7 +156,7 @@ namespace Engine
             {
                 for (int rank = 0; rank < 8; rank++)
                 {
-                    Piece piece = board.Squares[rank, file];
+                    Piece? piece = board.GetPiece(new Square(rank, file));
                     if (piece != null)
                     {
                         int rankIndex = (piece.Color == PieceColor.White) ? rank : 7 - rank;
@@ -175,6 +176,7 @@ namespace Engine
             }
 
             evaluation += Mobility(board);
+            evaluation += PawnStructure(board);
             return evaluation;
         }
 
@@ -192,10 +194,10 @@ namespace Engine
             {
                 for (int file = 0; file < 8; file++)
                 {
-                    Piece piece = board.Squares[rank, file];
-                    if (piece != null && piece.Color == board.sideToMove)
+                    Piece? piece = board.GetPiece(new Square(rank, file));
+                    if (piece != null && piece.Color == board.SideToMove)
                     {
-                        moves.AddRange(piece.GetLegalMoves(board, new Square(rank, file), board.castlingRights, board.enPassantSquare));
+                        moves.AddRange(piece.GetLegalMoves(board, new Square(rank, file), board.CastlingRights, board.EnPassantSquare));
                     }
                 }
             }
@@ -207,7 +209,7 @@ namespace Engine
             }
 
             int alphaOriginal = alpha;
-            if (TT.TryGet(board.boardHash, out TranspositionTableEntry entry))
+            if (TT.TryGet(board.BoardHash, out TranspositionTableEntry entry))
             {
                 if (entry.Depth >= depth)
                 {
@@ -265,7 +267,7 @@ namespace Engine
                 }
             }
 
-            int bestScore = board.sideToMove == PieceColor.White ? int.MinValue : int.MaxValue;
+            int bestScore = board.SideToMove == PieceColor.White ? int.MinValue : int.MaxValue;
             foreach (Move move in moves)
             {
                 Board nextMove = board.Clone();
@@ -275,7 +277,7 @@ namespace Engine
                 newAllMovesInfo.Add(nextMove.MakeMove(move));
 
                 int score = Search(nextMove, depth - 1, out _, newAllMoves, newAllMovesInfo, alpha, beta);
-                if (board.sideToMove == PieceColor.White)
+                if (board.SideToMove == PieceColor.White)
                 {
                     if (score > bestScore)
                     {
@@ -312,7 +314,7 @@ namespace Engine
                     nodeType = NodeType.LowerBound;
                 }
 
-                TT.Store(board.boardHash, depth, bestScore, nodeType, bestMove, board.halfMoveClock);
+                TT.Store(board.BoardHash, depth, bestScore, nodeType, bestMove, board.HalfMoveClock);
             }
 
             return bestScore;
@@ -329,7 +331,7 @@ namespace Engine
                     Piece? piece = board.GetPiece(startSquare);
                     if (piece != null && piece.Type != PieceType.King && piece.Type != PieceType.Pawn)
                     {
-                        List<Move> moves = piece.GetMoves(board, startSquare, board.castlingRights, board.enPassantSquare);
+                        List<Move> moves = piece.GetMoves(board, startSquare, board.CastlingRights, board.EnPassantSquare);
                         int movesCount = moves.Count;
 
                         if (movesCount > 0)
@@ -362,9 +364,77 @@ namespace Engine
         private int PawnStructure(Board board)
         {
             int score = 0;
+            int index = (int)(board.PawnHash & (ulong)(PawnTT.Length - 1));
 
+            if (PawnTT[index].Key == board.PawnHash) return PawnTT[index].Score;
 
+            int[] whiteFiles = new int[8];
+            int[] blackFiles = new int[8];
 
+            for (int file = 0; file < 8; file++)
+            {
+                for (int rank = 0; rank < 8; rank++)
+                {
+                    Piece? piece = board.GetPiece(new Square(rank, file));
+                    if (piece != null && piece.Type == PieceType.Pawn)
+                    {
+                        if (piece.Color == PieceColor.White)
+                        {
+                            whiteFiles[file]++;
+                        }
+                        else
+                        {
+                            blackFiles[file]++;
+                        }
+                    }
+                }
+            }
+
+            for (int file = 0; file < 8; file++)
+            {
+                score -= 12 * Math.Max(0, whiteFiles[file] - 1);
+                score += 12 * Math.Max(0, blackFiles[file] - 1);
+
+                bool[] isolation = { false, false, false, false }; // [0] = White from left, [1] = White from right, [2] = Black from left, [3] = Black from right
+                
+                if (file > 0)
+                {
+                    if (whiteFiles[file] > 0 && whiteFiles[file - 1] == 0) isolation[0] = true;
+                    if (blackFiles[file] > 0 && blackFiles[file - 1] == 0) isolation[2] = true;
+                }
+                else isolation[0] = isolation[2] = true;
+
+                if (file < 7)
+                {
+                    if (whiteFiles[file] > 0 && whiteFiles[file + 1] == 0) isolation[1] = true;
+                    if (blackFiles[file] > 0 && blackFiles[file + 1] == 0) isolation[3] = true;
+                }
+                else isolation[1] = isolation[3] = true;
+
+                if (isolation[0] && isolation[1]) score -= 15 * whiteFiles[file];
+                if (isolation[2] && isolation[3]) score += 15 * blackFiles[file];
+
+                int[] passedBonus = { 0, 100, 60, 35, 20, 10, 0, 0 };
+                bool blackPassed = false;
+                for (int rank = 1; rank < 7; rank++)
+                {
+                    Piece? piece = board.GetPiece(new Square(rank, file));
+                    if (piece == null || piece.Type != PieceType.Pawn) continue;
+                    if (piece.Color == PieceColor.Black && blackPassed) continue;
+
+                    if (board.IsPawnPassed(new Square(rank, file)))
+                    {
+                        if (piece.Color == PieceColor.White) score += passedBonus[rank];
+                        else
+                        {
+                            score -= passedBonus[7 - rank];
+                            blackPassed = true;
+                        }
+                    }
+                }
+            }
+
+            PawnTT[index].Score = score;
             return score;
         }
     }

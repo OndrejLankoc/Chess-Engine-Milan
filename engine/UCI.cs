@@ -35,7 +35,7 @@ namespace Engine
                     case string s when s.StartsWith("go"):
                         engine.Search(board, 4, out Move bestMove, PlayedMoves, PlayedMovesInfo);
 
-                        engine.TT.ClearOldEntries(board.halfMoveClock);
+                        engine.TT.ClearOldEntries(board.HalfMoveClock);
 
                         Console.WriteLine($"bestmove {bestMove.ToString()}");
                         break;
@@ -60,7 +60,7 @@ namespace Engine
                     string moves = input.Split("moves ")[1];
                     foreach (string move in moves.Split(' '))
                     {
-                        Move.TryParse(board.sideToMove, move, out Move parsedMove);
+                        Move.TryParse(board.SideToMove, move, out Move parsedMove);
 
                         if (!board.IsMoveLegal(parsedMove))
                         {

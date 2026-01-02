@@ -129,6 +129,7 @@ namespace Engine
         public bool IsPromotion { get; set; }
         public Piece? PromotedPiece { get; set; }
         public ulong BoardHash { get; set; }
+        public ulong PawnHash { get; set; }
         public MoveInfo(Piece? takenPiece = null)
         {
             TakenPiece = takenPiece;

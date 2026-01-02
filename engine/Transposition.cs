@@ -55,4 +55,10 @@ namespace Engine
             }
         }
     }
+
+    public struct PawnTTEntry
+    {
+        public ulong Key;
+        public int Score;
+    }
 }
