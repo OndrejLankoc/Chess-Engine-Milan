@@ -370,6 +370,8 @@ namespace Engine
 
             int[] whiteFiles = new int[8];
             int[] blackFiles = new int[8];
+            int whiteIslands = 0;
+            int blackIslands = 0;
 
             for (int file = 0; file < 8; file++)
             {
@@ -386,6 +388,18 @@ namespace Engine
                         {
                             blackFiles[file]++;
                         }
+
+                        int direction = piece.Color == PieceColor.White ? 1 : -1;
+                        Piece? leftBehindPiece = board.GetPiece(new Square(rank + direction, file - 1));
+                        Piece? rightBehindPiece = board.GetPiece(new Square(rank + direction, file + 1));
+                        bool leftConnected = leftBehindPiece != null && leftBehindPiece.Type == PieceType.Pawn && leftBehindPiece.Color == piece.Color;
+                        bool rightConnected = rightBehindPiece != null && rightBehindPiece.Type == PieceType.Pawn && rightBehindPiece.Color == piece.Color;
+
+                        if (leftConnected && rightConnected) score += 12 * direction;
+                        else if (leftConnected || rightConnected) score += 5 * direction;
+
+                        Piece? pieceOnRight = board.GetPiece(new Square(rank, file + 1));
+                        if (pieceOnRight != null && pieceOnRight.Type == PieceType.Pawn && pieceOnRight.Color == piece.Color) score += 3 * direction;
                     }
                 }
             }
@@ -432,7 +446,13 @@ namespace Engine
                         }
                     }
                 }
+
+                if (whiteFiles[file] > 0 && (file == 0 || whiteFiles[file - 1] == 0)) whiteIslands++;
+                if (blackFiles[file] > 0 && (file == 0 || blackFiles[file - 1] == 0)) blackIslands++;
             }
+
+            score -= 12 * Math.Max(0, whiteIslands - 1);
+            score += 12 * Math.Max(0, blackIslands - 1);
 
             PawnTT[index].Score = score;
             return score;
