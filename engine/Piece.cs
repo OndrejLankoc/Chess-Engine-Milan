@@ -236,6 +236,8 @@ namespace Engine
                 }
             }
 
+            if (board.IsInCheck(Color)) return moves;
+
             int rights = (Color == PieceColor.White) ? 0 : 2;
             int rank = (Color == PieceColor.White) ? 7 : 0;
             if (castlingRights[rights])
