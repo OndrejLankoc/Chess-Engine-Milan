@@ -421,22 +421,27 @@ namespace Engine
             return false;
         }
 
-        public GameResult Result(List<MoveInfo> listOfAllMovesInfo, List<Move> listOfAllMoves, out string reason)
+        public GameResult Result(List<MoveInfo> listOfAllMovesInfo, List<Move> listOfAllMoves, out string reason, int legalMovesCount = -1)
         {
             reason = null!;
-            List<Move> moves = new List<Move>();
-            for (int rank = 0; rank < 8; rank++)
+            if (legalMovesCount == -1)
             {
-                for (int file = 0; file < 8; file++)
+                List<Move> moves = new List<Move>();
+                for (int rank = 0; rank < 8; rank++)
                 {
-                    Piece? piece = GetPiece(new Square(rank, file));
-                    if (piece != null && piece.Color == SideToMove)
+                    for (int file = 0; file < 8; file++)
                     {
-                        moves.AddRange(piece.GetLegalMoves(this, new Square(rank, file), CastlingRights, EnPassantSquare));
+                        Piece? piece = GetPiece(new Square(rank, file));
+                        if (piece != null && piece.Color == SideToMove)
+                        {
+                            moves.AddRange(piece.GetLegalMoves(this, new Square(rank, file), CastlingRights, EnPassantSquare));
+                        }
                     }
                 }
+                legalMovesCount = moves.Count;
             }
-            if (moves.Count == 0)
+
+            if (legalMovesCount == 0)
             {
                 if (IsInCheck(SideToMove))
                 {
@@ -467,7 +472,7 @@ namespace Engine
                 return GameResult.Draw;
             }
 
-            if (FullMoveNumber >= 4)
+            if (FullMoveNumber >= 4 && HalfMoveClock >= 6)
             {
                 Board previousPositions = Clone();
                 int positionCount = 1;

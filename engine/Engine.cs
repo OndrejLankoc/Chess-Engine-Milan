@@ -177,19 +177,12 @@ namespace Engine
 
             evaluation += Mobility(board);
             evaluation += PawnStructure(board);
-            // evaluation += CenterControl(board);
             return evaluation;
         }
 
         public int Search(Board board, int depth, out Move bestMove, List<Move> allMoves, List<MoveInfo> allMovesInfo, int alpha = int.MinValue, int beta = int.MaxValue)
         {
             bestMove = null;
-            GameResult result = board.Result(allMovesInfo, allMoves, out _);
-            if (result != GameResult.Ongoing)
-            {
-                return result == GameResult.WhiteWin ? int.MaxValue - 1 : result == GameResult.BlackWin ? int.MinValue + 1 : 0;
-            }
-
             List<Move> moves = new List<Move>();
             for (int rank = 0; rank < 8; rank++)
             {
@@ -202,6 +195,13 @@ namespace Engine
                     }
                 }
             }
+
+            GameResult result = board.Result(allMovesInfo, allMoves, out _, moves.Count);
+            if (result != GameResult.Ongoing)
+            {
+                return result == GameResult.WhiteWin ? int.MaxValue - 1 : result == GameResult.BlackWin ? int.MinValue + 1 : 0;
+            }
+
             moves = Move.MVV_LVA(moves, board);
 
             if (depth == 0 || moves.Count == 0)
