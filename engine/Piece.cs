@@ -39,10 +39,10 @@ namespace Engine
             };
         }
 
-        public List<Move> GetLegalMoves(Board originalBoard, Square positionOfPiece, bool[] castlingRights, Square? enPassantSquare = null)
+        public List<Move> GetLegalMoves(Board originalBoard, Square positionOfPiece)
         {
             List<Move> legalMoves = new List<Move>();
-            foreach (Move move in GetMoves(originalBoard, positionOfPiece, castlingRights, enPassantSquare))
+            foreach (Move move in GetMoves(originalBoard, positionOfPiece))
             {
                 Board boardAfterMove = originalBoard.Clone();
                 boardAfterMove.MakeMove(move);
@@ -54,12 +54,12 @@ namespace Engine
             return legalMoves;
         }
 
-        public List<Move> GetMoves(Board board, Square positionOfPiece, bool[] castlingRights, Square? enPassantSquare = null)
+        public List<Move> GetMoves(Board board, Square positionOfPiece)
         {
             switch (Type)
             {
                 case PieceType.Pawn:
-                    return GetPawnMoves(board, positionOfPiece, enPassantSquare);
+                    return GetPawnMoves(board, positionOfPiece);
                 case PieceType.Knight:
                     return GetKnightMoves(board, positionOfPiece);
                 case PieceType.Bishop:
@@ -69,13 +69,13 @@ namespace Engine
                 case PieceType.Queen:
                     return GetQueenMoves(board, positionOfPiece);
                 case PieceType.King:
-                    return GetKingMoves(board, positionOfPiece, castlingRights);
+                    return GetKingMoves(board, positionOfPiece);
                 default:
                     return new List<Move>();
             }
         }
 
-        private List<Move> GetPawnMoves(Board board, Square positionOfPiece, Square? enPassantSquare)
+        private List<Move> GetPawnMoves(Board board, Square positionOfPiece)
         {
             List<Move> moves = new List<Move>();
 
@@ -106,7 +106,7 @@ namespace Engine
             }
 
             Square captureLeft = new Square(positionOfPiece.Rank + direction, positionOfPiece.File - 1);
-            if (captureLeft.IsOnBoard() && (board.IsEnemy(captureLeft, Color) || (enPassantSquare != null && captureLeft.Rank == enPassantSquare.Rank && captureLeft.File == enPassantSquare.File)))
+            if (captureLeft.IsOnBoard() && (board.IsEnemy(captureLeft, Color) || (board.EnPassantSquare != null && captureLeft.Rank == board.EnPassantSquare.Rank && captureLeft.File == board.EnPassantSquare.File)))
             {
                 if (captureLeft.Rank == (Color == PieceColor.White ? 0 : 7))
                 {
@@ -122,7 +122,7 @@ namespace Engine
             }
 
             Square captureRight = new Square(positionOfPiece.Rank + direction, positionOfPiece.File + 1);
-            if (captureRight.IsOnBoard() && (board.IsEnemy(captureRight, Color) || (enPassantSquare != null && captureRight.Rank == enPassantSquare.Rank && captureRight.File == enPassantSquare.File)))
+            if (captureRight.IsOnBoard() && (board.IsEnemy(captureRight, Color) || (board.EnPassantSquare != null && captureRight.Rank == board.EnPassantSquare.Rank && captureRight.File == board.EnPassantSquare.File)))
             {
                 if (captureRight.Rank == (Color == PieceColor.White ? 0 : 7))
                 {
@@ -219,7 +219,7 @@ namespace Engine
             return moves;
         }
 
-        private List<Move> GetKingMoves(Board board, Square positionOfPiece, bool[] castlingRights)
+        private List<Move> GetKingMoves(Board board, Square positionOfPiece)
         {
             List<Move> moves = new List<Move>();
 
@@ -240,14 +240,14 @@ namespace Engine
 
             int rights = (Color == PieceColor.White) ? 0 : 2;
             int rank = (Color == PieceColor.White) ? 7 : 0;
-            if (castlingRights[rights])
+            if (board.CastlingRights[rights])
             {
                 if (board.IsEmpty(new Square(rank, 5)) && board.IsEmpty(new Square(rank, 6)))
                 {
                     moves.Add(new Move(positionOfPiece, new Square(rank, 6)));
                 }
             }
-            if (castlingRights[rights + 1])
+            if (board.CastlingRights[rights + 1])
             {
                 if (board.IsEmpty(new Square(rank, 3)) && board.IsEmpty(new Square(rank, 2)) && board.IsEmpty(new Square(rank, 1)))
                 {

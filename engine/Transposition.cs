@@ -9,8 +9,8 @@ namespace Engine
 
     public class TranspositionTableEntry
     {
-        public int Depth { get; set; }
         public int Score { get; set; }
+        public int Depth { get; set; }
         public NodeType Type { get; set; }
         public Move BestMove { get; set; }
         public int Age { get; set; }
@@ -20,7 +20,7 @@ namespace Engine
     {
         private Dictionary<ulong, TranspositionTableEntry> table = new();
 
-        public void Store(ulong hash, int depth, int score, NodeType type, Move bestMove, int age)
+        public void Store(ulong hash, int score, int depth, NodeType type, Move bestMove, int age)
         {
             if (table.TryGetValue(hash, out TranspositionTableEntry entry))
             {

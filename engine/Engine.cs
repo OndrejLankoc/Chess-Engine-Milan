@@ -191,7 +191,7 @@ namespace Engine
                     Piece? piece = board.GetPiece(new Square(rank, file));
                     if (piece != null && piece.Color == board.SideToMove)
                     {
-                        moves.AddRange(piece.GetLegalMoves(board, new Square(rank, file), board.CastlingRights, board.EnPassantSquare));
+                        moves.AddRange(piece.GetLegalMoves(board, new Square(rank, file)));
                     }
                 }
             }
@@ -315,7 +315,7 @@ namespace Engine
                     nodeType = NodeType.LowerBound;
                 }
 
-                TT.Store(board.BoardHash, depth, bestScore, nodeType, bestMove, board.HalfMoveClock);
+                TT.Store(board.BoardHash, bestScore, depth, nodeType, bestMove, board.HalfMoveClock);
             }
 
             return bestScore;
@@ -332,7 +332,7 @@ namespace Engine
                     Piece? piece = board.GetPiece(startSquare);
                     if (piece != null && piece.Type != PieceType.King && piece.Type != PieceType.Pawn)
                     {
-                        List<Move> moves = piece.GetMoves(board, startSquare, board.CastlingRights, board.EnPassantSquare);
+                        List<Move> moves = piece.GetMoves(board, startSquare);
                         int movesCount = moves.Count;
 
                         if (movesCount > 0)

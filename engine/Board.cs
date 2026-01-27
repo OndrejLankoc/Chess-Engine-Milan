@@ -434,7 +434,7 @@ namespace Engine
                         Piece? piece = GetPiece(new Square(rank, file));
                         if (piece != null && piece.Color == SideToMove)
                         {
-                            moves.AddRange(piece.GetLegalMoves(this, new Square(rank, file), CastlingRights, EnPassantSquare));
+                            moves.AddRange(piece.GetLegalMoves(this, new Square(rank, file)));
                         }
                     }
                 }
@@ -511,7 +511,7 @@ namespace Engine
                 return false;
             }
 
-            List<Move> legalMoves = piece.GetLegalMoves(this, move.From, CastlingRights, EnPassantSquare);
+            List<Move> legalMoves = piece.GetLegalMoves(this, move.From);
             foreach (Move legalMove in legalMoves)
             {
                 if (move.Equals(legalMove))
