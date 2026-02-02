@@ -84,36 +84,18 @@ namespace Engine
 
         public static List<Move> MVV_LVA(List<Move> unorderedMoves, Board board)
         {
-            List<PieceType> agresors = Enum.GetValues(typeof(PieceType)).Cast<PieceType>().ToList();
-            List<PieceType> victims = new List<PieceType>(agresors);
-            victims.Remove(PieceType.King);
-            victims = victims.OrderByDescending(pt => Piece.GetValue(pt)).ToList();
-            agresors = agresors.OrderBy(pt => Piece.GetValue(pt)).ToList();
             List<Move> orderedMoves = new List<Move>();
-
-            foreach (PieceType victim in victims)
-            {
-                foreach (PieceType agresor in agresors)
-                {
-                    foreach (Move move in unorderedMoves)
-                    {
-                        if (board.GetPiece(move.From) != null && board.GetPiece(move.From).Type == agresor &&
-                            board.GetPiece(move.To) != null && board.GetPiece(move.To).Type == victim)
-                        {
-                            orderedMoves.Add(move);
-                        }
-                    }
-                }
-            }
-
+            Dictionary<Move, int> moveScores = new Dictionary<Move, int>();
             foreach (Move move in unorderedMoves)
             {
-                if (!orderedMoves.Any(m => m.Equals(move)))
-                {
-                    orderedMoves.Add(move);
-                }
+                int score = 0;
+                Piece agresor = board.GetPiece(move.From)!;
+                Piece? victim = board.GetPiece(move.To);
+                if (victim != null) score = Piece.GetValue(victim.Type) * 10 - Piece.GetValue(agresor.Type);
+                moveScores[move] = score;
             }
-
+            
+            orderedMoves = moveScores.OrderByDescending(kvp => kvp.Value).Select(kvp => kvp.Key).ToList();
             return orderedMoves;
         }
     }

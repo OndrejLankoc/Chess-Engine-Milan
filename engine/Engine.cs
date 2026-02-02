@@ -8,6 +8,7 @@ namespace Engine
         public int Evaluate(Board board)
         {
             int evaluation = 0;
+            double gamePhase = board.EndgamePhase();
             int[,] mgPawnSquareTable =
             {
                 { 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -163,19 +164,19 @@ namespace Engine
                         evaluation += (piece.Color == PieceColor.White ? 1 : -1) *
                         (Piece.GetValue(piece.Type) + piece.Type switch
                         {
-                            PieceType.Pawn => (int)((1 - board.EndgamePhase()) * mgPawnSquareTable[rankIndex, file] + board.EndgamePhase() * egPawnSquareTable[rankIndex, file]),
-                            PieceType.Knight => (int)((1 - board.EndgamePhase()) * mgKnightSquareTable[rankIndex, file] + board.EndgamePhase() * egKnightSquareTable[rankIndex, file]),
-                            PieceType.Bishop => (int)((1 - board.EndgamePhase()) * mgBishopSquareTable[rankIndex, file] + board.EndgamePhase() * egBishopSquareTable[rankIndex, file]),
-                            PieceType.Rook => (int)((1 - board.EndgamePhase()) * mgRookSquareTable[rankIndex, file] + board.EndgamePhase() * egRookSquareTable[rankIndex, file]),
-                            PieceType.Queen => (int)((1 - board.EndgamePhase()) * mgQueenSquareTable[rankIndex, file] + board.EndgamePhase() * egQueenSquareTable[rankIndex, file]),
-                            PieceType.King => (int)((1 - board.EndgamePhase()) * mgKingSquareTable[rankIndex, file] + board.EndgamePhase() * egKingSquareTable[rankIndex, file]),
+                            PieceType.Pawn => (int)((1 - gamePhase) * mgPawnSquareTable[rankIndex, file] + gamePhase * egPawnSquareTable[rankIndex, file]),
+                            PieceType.Knight => (int)((1 - gamePhase) * mgKnightSquareTable[rankIndex, file] + gamePhase * egKnightSquareTable[rankIndex, file]),
+                            PieceType.Bishop => (int)((1 - gamePhase) * mgBishopSquareTable[rankIndex, file] + gamePhase * egBishopSquareTable[rankIndex, file]),
+                            PieceType.Rook => (int)((1 - gamePhase) * mgRookSquareTable[rankIndex, file] + gamePhase * egRookSquareTable[rankIndex, file]),
+                            PieceType.Queen => (int)((1 - gamePhase) * mgQueenSquareTable[rankIndex, file] + gamePhase * egQueenSquareTable[rankIndex, file]),
+                            PieceType.King => (int)((1 - gamePhase) * mgKingSquareTable[rankIndex, file] + gamePhase * egKingSquareTable[rankIndex, file]),
                             _ => 0
                         });
                     }
                 }
             }
 
-            evaluation += Mobility(board);
+            evaluation += Mobility(board, gamePhase);
             evaluation += PawnStructure(board);
             return evaluation;
         }
@@ -271,13 +272,15 @@ namespace Engine
             int bestScore = board.SideToMove == PieceColor.White ? int.MinValue : int.MaxValue;
             foreach (Move move in moves)
             {
-                Board nextMove = board.Clone();
-                List<Move> newAllMoves = new List<Move>(allMoves);
-                List<MoveInfo> newAllMovesInfo = new List<MoveInfo>(allMovesInfo);
-                newAllMoves.Add(move);
-                newAllMovesInfo.Add(nextMove.MakeMove(move));
+                allMoves.Add(move);
+                allMovesInfo.Add(board.MakeMove(move));
 
-                int score = Search(nextMove, depth - 1, out _, newAllMoves, newAllMovesInfo, alpha, beta);
+                int score = Search(board, depth - 1, out _, allMoves, allMovesInfo, alpha, beta);
+
+                board.UndoMove(move, allMovesInfo.Last());
+                allMoves.RemoveAt(allMoves.Count - 1);
+                allMovesInfo.RemoveAt(allMovesInfo.Count - 1);
+
                 if (board.SideToMove == PieceColor.White)
                 {
                     if (score > bestScore)
@@ -321,7 +324,7 @@ namespace Engine
             return bestScore;
         }
 
-        private int Mobility(Board board)
+        private int Mobility(Board board, double gamePhase)
         {
             int mobility = 0;
             for (int file = 0; file < 8; file++)
@@ -352,7 +355,7 @@ namespace Engine
                                 PieceType.Queen => 2
                             };
 
-                            int mobilityWeight = (int)((1 - board.EndgamePhase()) * mgMobilityWeight + board.EndgamePhase() * egMobilityWeight);
+                            int mobilityWeight = (int)((1 - gamePhase) * mgMobilityWeight + gamePhase * egMobilityWeight);
                             mobility += (piece.Color == PieceColor.White ? 1 : -1) * movesCount * mobilityWeight;
                         }
                     }

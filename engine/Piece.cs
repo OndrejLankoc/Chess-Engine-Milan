@@ -39,17 +39,14 @@ namespace Engine
             };
         }
 
-        public List<Move> GetLegalMoves(Board originalBoard, Square positionOfPiece)
+        public List<Move> GetLegalMoves(Board board, Square positionOfPiece)
         {
             List<Move> legalMoves = new List<Move>();
-            foreach (Move move in GetMoves(originalBoard, positionOfPiece))
+            foreach (Move move in GetMoves(board, positionOfPiece))
             {
-                Board boardAfterMove = originalBoard.Clone();
-                boardAfterMove.MakeMove(move);
-                if (!boardAfterMove.IsInCheck(Color))
-                {
-                    legalMoves.Add(move);
-                }
+                MoveInfo info = board.MakeMove(move);
+                if (!board.IsInCheck(Color)) legalMoves.Add(move);
+                board.UndoMove(move, info);
             }
             return legalMoves;
         }

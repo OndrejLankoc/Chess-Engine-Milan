@@ -108,7 +108,8 @@ namespace Engine
                 CastlingRights = (bool[])CastlingRights.Clone(),
                 HalfMoveClock = HalfMoveClock,
                 FullMoveNumber = FullMoveNumber,
-                BoardHash = BoardHash
+                BoardHash = BoardHash,
+                PawnHash = PawnHash
             };
 
             for (int file = 0; file < 8; file++)
@@ -127,7 +128,7 @@ namespace Engine
 
         public bool Equals(Board secondBoard)
         {
-            if (secondBoard.BoardHash != BoardHash)
+            if (secondBoard.BoardHash != BoardHash || secondBoard.PawnHash != PawnHash)
             {
                 return false;
             }
