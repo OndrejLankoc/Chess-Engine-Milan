@@ -181,7 +181,7 @@ namespace Engine
             return evaluation;
         }
 
-        public int Search(Board board, int depth, out Move bestMove, List<Move> allMoves, List<MoveInfo> allMovesInfo, int alpha = int.MinValue, int beta = int.MaxValue)
+        public int Search(Board board, int depth, out Move bestMove, List<Move> allMoves, List<MoveInfo> allMovesInfo, int alpha = int.MinValue, int beta = int.MaxValue, bool nullMoveAllowed = true)
         {
             bestMove = null;
             List<Move> moves = new List<Move>();
@@ -205,7 +205,7 @@ namespace Engine
 
             moves = Move.MVV_LVA(moves, board);
 
-            if (depth == 0 || moves.Count == 0)
+            if (depth <= 0 || moves.Count == 0)
             {
                 return Evaluate(board);
             }
@@ -265,6 +265,29 @@ namespace Engine
 
                         moves.Remove(entry.BestMove);
                         moves.Add(entry.BestMove);
+                    }
+                }
+            }
+
+            if (depth >= 4 && !board.IsInCheck(board.SideToMove) && nullMoveAllowed)
+            {
+                if (board.EndgamePhase() < 0.8)
+                {
+                    int r = 2;
+                    MoveInfo nullMoveInfo = board.MakeMove();
+
+                    if (board.SideToMove == PieceColor.White)
+                    {
+                        int score = Search(board, depth - 1 - r, out _, allMoves, allMovesInfo, alpha, alpha + 1,
+                            false);
+                        board.UndoMove(nullMoveInfo);
+                        if (score <= alpha) return alpha;
+                    }
+                    else
+                    {
+                        int score = Search(board, depth - 1 - r, out _, allMoves, allMovesInfo, beta - 1, beta, false);
+                        board.UndoMove(nullMoveInfo);
+                        if (score >= beta) return beta;
                     }
                 }
             }

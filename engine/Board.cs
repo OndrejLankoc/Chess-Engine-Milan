@@ -376,6 +376,41 @@ namespace Engine
             PawnHash = moveInfo.PawnHash;
         }
 
+        public MoveInfo MakeMove()
+        {
+            MoveInfo moveInfo = new MoveInfo(null)
+            {
+                CastlingRights = (bool[])CastlingRights.Clone(),
+                EnPassantSquare = EnPassantSquare,
+                HalfMoveClock = HalfMoveClock,
+                BoardHash = BoardHash,
+                PawnHash = PawnHash
+            };
+
+            if (EnPassantSquare != null)
+            {
+                BoardHash ^= Hash.EnPassantFile[EnPassantSquare.File];
+                EnPassantSquare = null;
+            }
+            FullMoveNumber = (SideToMove == PieceColor.Black) ? FullMoveNumber + 1 : FullMoveNumber;
+            HalfMoveClock++;
+            SideToMove = (SideToMove == PieceColor.White) ? PieceColor.Black : PieceColor.White;
+            BoardHash ^= Hash.SideToMove;
+
+            return moveInfo;
+        }
+
+        public void UndoMove(MoveInfo moveInfo)
+        {
+            CastlingRights = moveInfo.CastlingRights;
+            EnPassantSquare = moveInfo.EnPassantSquare;
+            SideToMove = (SideToMove == PieceColor.White) ? PieceColor.Black : PieceColor.White;
+            HalfMoveClock = moveInfo.HalfMoveClock;
+            FullMoveNumber = (SideToMove == PieceColor.Black) ? FullMoveNumber - 1 : FullMoveNumber;
+            BoardHash = moveInfo.BoardHash;
+            PawnHash = moveInfo.PawnHash;
+        }
+
         public Square GetKingPosition(PieceColor color)
         {
             for (int file = 0; file < 8; file++)
