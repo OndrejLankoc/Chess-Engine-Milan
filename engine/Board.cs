@@ -617,6 +617,19 @@ namespace Engine
             return true;
         }
 
+        public bool IsMoveQuiet(Move move)
+        {
+            Piece? movingPiece = GetPiece(move.From);
+            Piece? capturedPiece = GetPiece(move.To);
+
+            if (movingPiece == null) return false;
+            if (capturedPiece != null) return false;
+            if (EnPassantSquare != null && move.To.Rank == EnPassantSquare.Rank && move.To.File == EnPassantSquare.File) return false;
+            if (movingPiece.Type == PieceType.Pawn && move.PromotedPiece != null) return false;
+
+            return true;
+        }
+
         public ulong ComputeHash()
         {
             ulong hash = 0;

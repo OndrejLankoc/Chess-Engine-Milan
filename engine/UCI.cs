@@ -35,7 +35,7 @@ namespace Engine
                     case string s when s.StartsWith("go"):
                         engine.Search(board, 4, out Move bestMove, PlayedMoves, PlayedMovesInfo);
 
-                        engine.TT.ClearOldEntries(board.HalfMoveClock);
+                        engine.ClearOldData(board.HalfMoveClock);
 
                         Console.WriteLine($"bestmove {bestMove.ToString()}");
                         break;

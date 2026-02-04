@@ -82,20 +82,37 @@ namespace Engine
             return moveString;
         }
 
-        public static List<Move> MVV_LVA(List<Move> unorderedMoves, Board board)
+        public static List<Move> OrderMoves(List<Move> unorderedMoves, Move?[,] killers, int[,,] history, Board board, int ply)
         {
-            List<Move> orderedMoves = new List<Move>();
             Dictionary<Move, int> moveScores = new Dictionary<Move, int>();
             foreach (Move move in unorderedMoves)
             {
                 int score = 0;
-                Piece agresor = board.GetPiece(move.From)!;
+
+                // Promotion
+                if (move.PromotedPiece != null) score += 10000 + Piece.GetValue(move.PromotedPiece.Type);
+
+                // MVV-LVA
+                Piece? agresor = board.GetPiece(move.From);
                 Piece? victim = board.GetPiece(move.To);
-                if (victim != null) score = Piece.GetValue(victim.Type) * 10 - Piece.GetValue(agresor.Type);
+                if (victim != null && agresor != null) score += 9000 + (int)victim.Type * 10 - (int)agresor.Type;
+
+                if (board.IsMoveQuiet(move))
+                {
+                    // Killers
+                    if (killers[ply, 0] != null && move.Equals(killers[ply, 0]!)) score += 8000;
+                    else if (killers[ply, 1] != null && move.Equals(killers[ply, 1]!)) score += 7000;
+
+                    //History
+                    int from = move.From.Rank * 8 + move.From.File;
+                    int to = move.To.Rank * 8 + move.To.File;
+                    score += history[(int)board.SideToMove, from, to];
+                }
+
                 moveScores[move] = score;
             }
             
-            orderedMoves = moveScores.OrderByDescending(kvp => kvp.Value).Select(kvp => kvp.Key).ToList();
+            List<Move> orderedMoves = moveScores.OrderByDescending(kvp => kvp.Value).Select(kvp => kvp.Key).ToList();
             return orderedMoves;
         }
     }

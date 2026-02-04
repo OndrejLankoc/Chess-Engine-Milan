@@ -4,6 +4,8 @@ namespace Engine
     {
         public TranspositionTable TT = new();
         public PawnTTEntry[] PawnTT = new PawnTTEntry[1 << 16];
+        public Move?[,] KillerMoves = new Move?[32, 2];
+        public int[,,] History = new int[2, 64, 64];
 
         public int Evaluate(Board board)
         {
@@ -181,7 +183,7 @@ namespace Engine
             return evaluation;
         }
 
-        public int Search(Board board, int depth, out Move bestMove, List<Move> allMoves, List<MoveInfo> allMovesInfo, int alpha = int.MinValue, int beta = int.MaxValue, bool nullMoveAllowed = true)
+        public int Search(Board board, int depth, out Move bestMove, List<Move> allMoves, List<MoveInfo> allMovesInfo, int ply = 0, int alpha = int.MinValue, int beta = int.MaxValue, bool nullMoveAllowed = true)
         {
             bestMove = null;
             List<Move> moves = new List<Move>();
@@ -203,12 +205,12 @@ namespace Engine
                 return result == GameResult.WhiteWin ? int.MaxValue - 1 : result == GameResult.BlackWin ? int.MinValue + 1 : 0;
             }
 
-            moves = Move.MVV_LVA(moves, board);
-
             if (depth <= 0 || moves.Count == 0)
             {
                 return Evaluate(board);
             }
+
+            moves = Move.OrderMoves(moves, KillerMoves, History, board, ply);
 
             int alphaOriginal = alpha;
             if (TT.TryGet(board.BoardHash, out TranspositionTableEntry entry))
@@ -278,14 +280,13 @@ namespace Engine
 
                     if (board.SideToMove == PieceColor.White)
                     {
-                        int score = Search(board, depth - 1 - r, out _, allMoves, allMovesInfo, alpha, alpha + 1,
-                            false);
+                        int score = Search(board, depth - 1 - r, out _, allMoves, allMovesInfo, ply + 1, alpha, alpha + 1, false);
                         board.UndoMove(nullMoveInfo);
                         if (score <= alpha) return alpha;
                     }
                     else
                     {
-                        int score = Search(board, depth - 1 - r, out _, allMoves, allMovesInfo, beta - 1, beta, false);
+                        int score = Search(board, depth - 1 - r, out _, allMoves, allMovesInfo, ply + 1, beta - 1, beta, false);
                         board.UndoMove(nullMoveInfo);
                         if (score >= beta) return beta;
                     }
@@ -298,7 +299,7 @@ namespace Engine
                 allMoves.Add(move);
                 allMovesInfo.Add(board.MakeMove(move));
 
-                int score = Search(board, depth - 1, out _, allMoves, allMovesInfo, alpha, beta);
+                int score = Search(board, depth - 1, out _, allMoves, allMovesInfo, ply + 1, alpha, beta);
 
                 board.UndoMove(move, allMovesInfo.Last());
                 allMoves.RemoveAt(allMoves.Count - 1);
@@ -325,6 +326,11 @@ namespace Engine
 
                 if (alpha >= beta)
                 {
+                    if (board.IsMoveQuiet(move))
+                    {
+                        StoreKillerMove(move, ply);
+                        StoreHistoryMove(move, board.SideToMove, depth);
+                    }
                     break;
                 }
             }
@@ -483,6 +489,36 @@ namespace Engine
 
             PawnTT[index].Score = score;
             return score;
+        }
+
+        public void StoreKillerMove(Move move, int ply)
+        {
+            if (KillerMoves[ply, 0] != null && move.Equals(KillerMoves[ply, 0]!)) return;
+            KillerMoves[ply, 1] = KillerMoves[ply, 0];
+            KillerMoves[ply, 0] = move;
+        }
+
+        public void StoreHistoryMove(Move move, PieceColor color, int depth)
+        {
+            int from = move.From.Rank * 8 + move.From.File;
+            int to = move.To.Rank * 8 + move.To.File;
+            History[(int)color, from, to] += depth * depth;
+        }
+
+        public void ClearOldData(int halfMoveClock)
+        {
+            TT.ClearOldEntries(halfMoveClock);
+            KillerMoves = new Move?[32, 2];
+            for (int color = 0; color < 2; color++)
+            {
+                for (int from = 0; from < 64; from++)
+                {
+                    for (int to = 0; to < 64; to++)
+                    {
+                        History[color, from, to] /= 2;
+                    }
+                }
+            }
         }
     }
 }
