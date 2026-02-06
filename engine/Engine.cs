@@ -207,7 +207,7 @@ namespace Engine
 
             if (depth <= 0 || moves.Count == 0)
             {
-                return Evaluate(board);
+                return Quiescence(board, allMoves, allMovesInfo, ply, alpha, beta);
             }
 
             moves = Move.OrderMoves(moves, KillerMoves, History, board, ply);
@@ -242,30 +242,18 @@ namespace Engine
                 {
                     if (entry.Type == NodeType.Exact)
                     {
-                        moves.Remove(entry.BestMove);
+                        moves.RemoveAll(m => m.Equals(entry.BestMove));
                         moves.Insert(0, entry.BestMove);
                     }
 
                     else if (entry.Type == NodeType.LowerBound)
                     {
-                        if (entry.Score > alpha)
-                        {
-                            int margin = (depth - entry.Depth) * 50;
-                            alpha = Math.Max(alpha, entry.Score - margin);
-                        }
-
-                        moves.Remove(entry.BestMove);
+                        moves.RemoveAll(m => m.Equals(entry.BestMove));
                         moves.Insert(0, entry.BestMove);
                     }
                     else if (entry.Type == NodeType.UpperBound)
                     {
-                        if (entry.Score < beta)
-                        {
-                            int margin = (depth - entry.Depth) * 50;
-                            beta = Math.Min(beta, entry.Score + margin);
-                        }
-
-                        moves.Remove(entry.BestMove);
+                        moves.RemoveAll(m => m.Equals(entry.BestMove));
                         moves.Add(entry.BestMove);
                     }
                 }
@@ -351,6 +339,84 @@ namespace Engine
             }
 
             return bestScore;
+        }
+
+        private int Quiescence(Board board, List<Move> allMoves, List<MoveInfo> allMovesInfo, int ply, int alpha, int beta)
+        {
+            List<Move> moves = new List<Move>();
+
+            if (board.IsInCheck(board.SideToMove))
+            {
+                for (int rank = 0; rank < 8; rank++)
+                {
+                    for (int file = 0; file < 8; file++)
+                    {
+                        Piece? piece = board.GetPiece(new Square(rank, file));
+                        if (piece != null && piece.Color == board.SideToMove) moves.AddRange(piece.GetLegalMoves(board, new Square(rank, file)));
+                    }
+                }
+                if (moves.Count == 0) return board.SideToMove == PieceColor.White ? int.MinValue + 1 : int.MaxValue - 1;
+            }
+
+            else
+            {
+                int standPat = Evaluate(board);
+                if (board.SideToMove == PieceColor.White)
+                {
+                    alpha = Math.Max(alpha, standPat);
+                    if (alpha >= beta) return alpha;
+                }
+                else
+                {
+                    beta = Math.Min(beta, standPat);
+                    if (alpha >= beta) return beta;
+                }
+
+                for (int rank = 0; rank < 8; rank++)
+                {
+                    for (int file = 0; file < 8; file++)
+                    {
+                        Piece? piece = board.GetPiece(new Square(rank, file));
+                        if (piece != null && piece.Color == board.SideToMove) moves.AddRange(piece.GetCaptureMoves(board, new Square(rank, file)));
+                    }
+                }
+
+                if (moves.Count == 0)
+                {
+                    for (int rank = 0; rank < 8; rank++)
+                    {
+                        for (int file = 0; file < 8; file++)
+                        {
+                            Piece? piece = board.GetPiece(new Square(rank, file));
+                            if (piece == null || piece.Color != board.SideToMove) continue;
+                            if (piece.GetLegalMoves(board, new Square(rank, file)).Count > 0) return standPat;
+                        }
+                    }
+
+                    return 0;
+                }
+            }
+
+            moves = Move.OrderMoves(moves, KillerMoves, History, board, ply);
+
+            foreach (Move move in moves)
+            {
+                allMoves.Add(move);
+                allMovesInfo.Add(board.MakeMove(move));
+
+                int score = Quiescence(board, allMoves, allMovesInfo, ply + 1, alpha, beta);
+
+                board.UndoMove(move, allMovesInfo.Last());
+                allMoves.RemoveAt(allMoves.Count - 1);
+                allMovesInfo.RemoveAt(allMovesInfo.Count - 1);
+
+                if (board.SideToMove == PieceColor.White) alpha = Math.Max(alpha, score);
+                else beta = Math.Min(beta, score);
+
+                if (alpha >= beta) break;
+            }
+
+            return board.SideToMove == PieceColor.White ? alpha : beta;
         }
 
         private int Mobility(Board board, double gamePhase)

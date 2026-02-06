@@ -14,7 +14,7 @@ namespace Engine
 
         public bool Equals(Move secondMove)
         {
-            if (From.Rank != secondMove.From.Rank || From.File != secondMove.From.File || To.Rank != secondMove.To.Rank || To.File != secondMove.To.File)
+            if (!From.Equals(secondMove.From) || !To.Equals(secondMove.To))
             {
                 return false;
             }
@@ -95,6 +95,7 @@ namespace Engine
                 // MVV-LVA
                 Piece? agresor = board.GetPiece(move.From);
                 Piece? victim = board.GetPiece(move.To);
+                if (board.EnPassantSquare != null && move.To.Equals(board.EnPassantSquare)) victim = new Piece(PieceType.Pawn, board.SideToMove == PieceColor.White ? PieceColor.Black : PieceColor.White);
                 if (victim != null && agresor != null) score += 9000 + (int)victim.Type * 10 - (int)agresor.Type;
 
                 if (board.IsMoveQuiet(move))

@@ -167,7 +167,7 @@ namespace Engine
             if (EnPassantSquare == null && secondBoard.EnPassantSquare != null ||
                 EnPassantSquare != null && secondBoard.EnPassantSquare == null ||
                 EnPassantSquare != null && secondBoard.EnPassantSquare != null &&
-                (EnPassantSquare.File != secondBoard.EnPassantSquare.File || EnPassantSquare.Rank != secondBoard.EnPassantSquare.Rank))
+                !EnPassantSquare.Equals(secondBoard.EnPassantSquare))
             {
                 return false;
             }
@@ -283,6 +283,7 @@ namespace Engine
                 int rank = (piece.Color == PieceColor.White) ? 0 : 7;
                 if (move.To.Rank == rank)
                 {
+                    if (move.PromotedPiece == null) move.PromotedPiece = new Piece(PieceType.Queen, piece.Color);
                     Squares[move.To.Rank, move.To.File] = move.PromotedPiece;
                     moveInfo.IsPromotion = true;
                     moveInfo.PromotedPiece = move.PromotedPiece;
@@ -296,7 +297,7 @@ namespace Engine
                     PawnHash ^= Hash.PawnSquare[piece.Color == PieceColor.White ? 0 : 1, squareIndex];
                 }
 
-                if (EnPassantSquare != null && EnPassantSquare.File == move.To.File && EnPassantSquare.Rank == move.To.Rank)
+                if (EnPassantSquare != null && EnPassantSquare.Equals(move.To))
                 {
                     Piece capturedPawn = GetPiece(new Square(move.To.Rank + (piece.Color == PieceColor.White ? 1 : -1), move.To.File))!;
                     int capturedPawnType = (capturedPawn.Color == PieceColor.Black ? 6 : 0) + (int)capturedPawn.Type;

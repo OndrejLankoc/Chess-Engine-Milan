@@ -40,6 +40,10 @@ namespace Engine
                         Console.WriteLine($"bestmove {bestMove.ToString()}");
                         break;
 
+                    case "ucinewgame":
+                        engine = new Engine();
+                        break;
+
                     case "quit":
                         return;
                 }                
@@ -50,6 +54,7 @@ namespace Engine
         {
             PlayedMoves.Clear();
             PlayedMovesInfo.Clear();
+            board = new Board();
 
             if (input.Contains("startpos"))
             {
@@ -65,6 +70,7 @@ namespace Engine
                         if (!board.IsMoveLegal(parsedMove))
                         {
                             Console.WriteLine("Illegal move in UCI input.");
+                            Console.WriteLine($"Move: {move}");
                             Environment.Exit(1);
                         }
 

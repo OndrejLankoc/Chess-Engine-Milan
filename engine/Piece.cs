@@ -51,6 +51,21 @@ namespace Engine
             return legalMoves;
         }
 
+        public List<Move> GetCaptureMoves(Board board, Square positionOfPiece)
+        {
+            List<Move> captureMoves = new List<Move>();
+            foreach (Move move in GetAttackMoves(positionOfPiece, board))
+            {
+                if (board.IsEnemy(move.To, Color) || (board.EnPassantSquare != null && move.To.Equals(board.EnPassantSquare)))
+                {
+                    MoveInfo info = board.MakeMove(move);
+                    if (!board.IsInCheck(Color)) captureMoves.Add(move);
+                    board.UndoMove(move, info);
+                }
+            }
+            return captureMoves;
+        }
+
         public List<Move> GetMoves(Board board, Square positionOfPiece)
         {
             switch (Type)
@@ -103,7 +118,7 @@ namespace Engine
             }
 
             Square captureLeft = new Square(positionOfPiece.Rank + direction, positionOfPiece.File - 1);
-            if (captureLeft.IsOnBoard() && (board.IsEnemy(captureLeft, Color) || (board.EnPassantSquare != null && captureLeft.Rank == board.EnPassantSquare.Rank && captureLeft.File == board.EnPassantSquare.File)))
+            if (captureLeft.IsOnBoard() && (board.IsEnemy(captureLeft, Color) || (board.EnPassantSquare != null && captureLeft.Equals(board.EnPassantSquare))))
             {
                 if (captureLeft.Rank == (Color == PieceColor.White ? 0 : 7))
                 {
@@ -119,7 +134,7 @@ namespace Engine
             }
 
             Square captureRight = new Square(positionOfPiece.Rank + direction, positionOfPiece.File + 1);
-            if (captureRight.IsOnBoard() && (board.IsEnemy(captureRight, Color) || (board.EnPassantSquare != null && captureRight.Rank == board.EnPassantSquare.Rank && captureRight.File == board.EnPassantSquare.File)))
+            if (captureRight.IsOnBoard() && (board.IsEnemy(captureRight, Color) || (board.EnPassantSquare != null && captureRight.Equals(board.EnPassantSquare))))
             {
                 if (captureRight.Rank == (Color == PieceColor.White ? 0 : 7))
                 {
@@ -262,16 +277,37 @@ namespace Engine
             {
                 case PieceType.Pawn:
                     int direction = (Color == PieceColor.White) ? -1 : 1;
+                    int promotionRank = (Color == PieceColor.White) ? 0 : 7;
                     Square leftAttack = new Square(positionOfPiece.Rank + direction, positionOfPiece.File - 1);
                     Square rightAttack = new Square(positionOfPiece.Rank + direction, positionOfPiece.File + 1);
                     
                     if (leftAttack.IsOnBoard())
                     {
-                        attackMoves.Add(new Move(positionOfPiece, leftAttack));
+                        if (leftAttack.Rank == promotionRank)
+                        {
+                            attackMoves.Add(new Move(positionOfPiece, leftAttack, new Piece(PieceType.Queen, Color)));
+                            attackMoves.Add(new Move(positionOfPiece, leftAttack, new Piece(PieceType.Rook, Color)));
+                            attackMoves.Add(new Move(positionOfPiece, leftAttack, new Piece(PieceType.Bishop, Color)));
+                            attackMoves.Add(new Move(positionOfPiece, leftAttack, new Piece(PieceType.Knight, Color)));
+                        }
+                        else
+                        {
+                            attackMoves.Add(new Move(positionOfPiece, leftAttack));
+                        }
                     }
                     if (rightAttack.IsOnBoard())
                     {
-                        attackMoves.Add(new Move(positionOfPiece, rightAttack));
+                        if (rightAttack.Rank == promotionRank)
+                        {
+                            attackMoves.Add(new Move(positionOfPiece, rightAttack, new Piece(PieceType.Queen, Color)));
+                            attackMoves.Add(new Move(positionOfPiece, rightAttack, new Piece(PieceType.Rook, Color)));
+                            attackMoves.Add(new Move(positionOfPiece, rightAttack, new Piece(PieceType.Bishop, Color)));
+                            attackMoves.Add(new Move(positionOfPiece, rightAttack, new Piece(PieceType.Knight, Color)));
+                        }
+                        else
+                        {
+                            attackMoves.Add(new Move(positionOfPiece, rightAttack));
+                        }
                     }
 
                     break;

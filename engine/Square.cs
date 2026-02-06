@@ -34,5 +34,10 @@ namespace Engine
             }
             return true;
         }
+
+        public bool Equals(Square secondSquare)
+        {
+            return Rank == secondSquare.Rank && File == secondSquare.File;
+        }
     }
 }
