@@ -6,6 +6,8 @@ namespace Engine
         public PawnTTEntry[] PawnTT = new PawnTTEntry[1 << 16];
         public Move?[,] KillerMoves = new Move?[32, 2];
         public int[,,] History = new int[2, 64, 64];
+        private const int Mate = 100000;
+        private const int MateThreshold = Mate - 1000;
 
         public int Evaluate(Board board)
         {
@@ -40,7 +42,7 @@ namespace Engine
                 { -167, -89, -34, -49, 61, -97, -15, -107 },
                 { -73, -41, 72, 36, 23, 62, 7, -17 },
                 { -47, 60, 37, 65, 84, 129, 73, 44 },
-                { -9, 17, 19, 53, 37, 69, 18, 22 },
+                { -9, 17, 19, 43, 37, 69, 18, 22 },
                 { -13, 4, 16, 13, 28, 19, 21, -8 },
                 { -23, -9, 12, 10, 19, 17, 25, -16 },
                 { -29, -53, -12, -3, -1, 18, -14, -19 },
@@ -202,7 +204,7 @@ namespace Engine
             GameResult result = board.Result(allMovesInfo, allMoves, out _, moves.Count);
             if (result != GameResult.Ongoing)
             {
-                return result == GameResult.WhiteWin ? int.MaxValue - 1 : result == GameResult.BlackWin ? int.MinValue + 1 : 0;
+                return result == GameResult.WhiteWin ? Mate : result == GameResult.BlackWin ? -Mate : 0;
             }
 
             if (depth <= 0 || moves.Count == 0)
@@ -220,6 +222,7 @@ namespace Engine
                     switch (entry.Type)
                     {
                         case NodeType.Exact:
+                            bestMove = entry.BestMove;
                             return entry.Score;
 
                         case NodeType.LowerBound:
@@ -242,6 +245,12 @@ namespace Engine
                 {
                     if (entry.Type == NodeType.Exact)
                     {
+                        if (Math.Abs(entry.Score) >= MateThreshold)
+                        {
+                            bestMove = entry.BestMove;
+                            return entry.Score;
+                        }
+
                         moves.RemoveAll(m => m.Equals(entry.BestMove));
                         moves.Insert(0, entry.BestMove);
                     }
@@ -261,7 +270,7 @@ namespace Engine
 
             if (depth >= 4 && !board.IsInCheck(board.SideToMove) && nullMoveAllowed)
             {
-                if (board.EndgamePhase() < 0.8)
+                if (board.EndgamePhase() < 0.7)
                 {
                     int r = 2;
                     MoveInfo nullMoveInfo = board.MakeMove();
@@ -288,6 +297,7 @@ namespace Engine
                 allMovesInfo.Add(board.MakeMove(move));
 
                 int score = Search(board, depth - 1, out _, allMoves, allMovesInfo, ply + 1, alpha, beta);
+                if (Math.Abs(score) >= MateThreshold) score += score > 0 ? score - 1 : score + 1;
 
                 board.UndoMove(move, allMovesInfo.Last());
                 allMoves.RemoveAt(allMoves.Count - 1);
@@ -355,7 +365,7 @@ namespace Engine
                         if (piece != null && piece.Color == board.SideToMove) moves.AddRange(piece.GetLegalMoves(board, new Square(rank, file)));
                     }
                 }
-                if (moves.Count == 0) return board.SideToMove == PieceColor.White ? int.MinValue + 1 : int.MaxValue - 1;
+                if (moves.Count == 0) return board.SideToMove == PieceColor.White ? -Mate : Mate;
             }
 
             else

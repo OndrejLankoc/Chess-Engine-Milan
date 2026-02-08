@@ -514,10 +514,11 @@ namespace Engine
                 Board previousPositions = Clone();
                 int positionCount = 1;
 
-                for (int i = listOfAllMoves.Count - 1; i >= 0; i--)
+                for (int i = listOfAllMoves.Count - 1; i >= 0 && i >= listOfAllMoves.Count - HalfMoveClock; i--)
                 {
                     Move move = listOfAllMoves[i];
                     MoveInfo moveInfo = listOfAllMovesInfo[i];
+                    if (!CastlingRights.SequenceEqual(moveInfo.CastlingRights)) break;
                     previousPositions.UndoMove(move, moveInfo);
                     if (Equals(previousPositions))
                     {
