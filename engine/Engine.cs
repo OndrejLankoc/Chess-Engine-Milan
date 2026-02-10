@@ -415,6 +415,7 @@ namespace Engine
                 allMovesInfo.Add(board.MakeMove(move));
 
                 int score = Quiescence(board, allMoves, allMovesInfo, ply + 1, alpha, beta);
+                if (Math.Abs(score) >= MateThreshold) score = score > 0 ? score - 1 : score + 1;
 
                 board.UndoMove(move, allMovesInfo.Last());
                 allMoves.RemoveAt(allMoves.Count - 1);

@@ -252,18 +252,21 @@ namespace Engine
 
             int rights = (Color == PieceColor.White) ? 0 : 2;
             int rank = (Color == PieceColor.White) ? 7 : 0;
+            PieceColor enemyColor = Color == PieceColor.White ? PieceColor.Black : PieceColor.White;
             if (board.CastlingRights[rights])
             {
-                if (board.IsEmpty(new Square(rank, 5)) && board.IsEmpty(new Square(rank, 6)))
+                Square crossedSquare = new Square(rank, 5);
+                if (board.IsEmpty(crossedSquare) && board.IsEmpty(new Square(rank, 6)))
                 {
-                    moves.Add(new Move(positionOfPiece, new Square(rank, 6)));
+                    if (!board.IsSquareAttacked(crossedSquare, enemyColor)) moves.Add(new Move(positionOfPiece, new Square(rank, 6)));
                 }
             }
             if (board.CastlingRights[rights + 1])
             {
-                if (board.IsEmpty(new Square(rank, 3)) && board.IsEmpty(new Square(rank, 2)) && board.IsEmpty(new Square(rank, 1)))
+                Square crossedSquare = new Square(rank, 3);
+                if (board.IsEmpty(crossedSquare) && board.IsEmpty(new Square(rank, 2)) && board.IsEmpty(new Square(rank, 1)))
                 {
-                    moves.Add(new Move(positionOfPiece, new Square(rank, 2)));
+                    if (!board.IsSquareAttacked(crossedSquare, enemyColor)) moves.Add(new Move(positionOfPiece, new Square(rank, 2)));
                 }
             }
 
