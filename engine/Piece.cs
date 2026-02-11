@@ -42,11 +42,15 @@ namespace Engine
         public List<Move> GetLegalMoves(Board board, Square positionOfPiece)
         {
             List<Move> legalMoves = new List<Move>();
+            Square kingPosition = board.GetKingPosition(Color);
+            PieceColor enemyColor = Color == PieceColor.White ? PieceColor.Black : PieceColor.White;
             foreach (Move move in GetMoves(board, positionOfPiece))
             {
+                if (board.GetPiece(move.From)!.Type == PieceType.King) kingPosition = move.To;
                 MoveInfo info = board.MakeMove(move);
-                if (!board.IsInCheck(Color)) legalMoves.Add(move);
+                if (!board.IsSquareAttacked(kingPosition, enemyColor)) legalMoves.Add(move);
                 board.UndoMove(move, info);
+                if (board.GetPiece(move.From)!.Type == PieceType.King) kingPosition = move.From;
             }
             return legalMoves;
         }
@@ -54,13 +58,18 @@ namespace Engine
         public List<Move> GetCaptureMoves(Board board, Square positionOfPiece)
         {
             List<Move> captureMoves = new List<Move>();
+            Square kingPosition = board.GetKingPosition(Color);
+            PieceColor enemyColor = Color == PieceColor.White ? PieceColor.Black : PieceColor.White;
+
             foreach (Move move in GetAttackMoves(positionOfPiece, board))
             {
                 if (board.IsEnemy(move.To, Color) || (board.EnPassantSquare != null && move.To.Equals(board.EnPassantSquare)))
                 {
+                    if (board.GetPiece(move.From)!.Type == PieceType.King) kingPosition = move.To;
                     MoveInfo info = board.MakeMove(move);
-                    if (!board.IsInCheck(Color)) captureMoves.Add(move);
+                    if (!board.IsSquareAttacked(kingPosition, enemyColor)) captureMoves.Add(move);
                     board.UndoMove(move, info);
+                    if (board.GetPiece(move.From)!.Type == PieceType.King) kingPosition = move.From;
                 }
             }
             return captureMoves;

@@ -368,7 +368,7 @@ namespace Engine
                 Squares[move.From.Rank, move.From.File] = new Piece(PieceType.Pawn, (Squares[move.From.Rank, move.From.File]!.Color == PieceColor.Black) ? PieceColor.Black : PieceColor.White);
             }
 
-            CastlingRights = moveInfo.CastlingRights;
+            CastlingRights = (bool[])moveInfo.CastlingRights.Clone();
             EnPassantSquare = moveInfo.EnPassantSquare;
             SideToMove = (SideToMove == PieceColor.White) ? PieceColor.Black : PieceColor.White;
             HalfMoveClock = moveInfo.HalfMoveClock;
@@ -447,7 +447,7 @@ namespace Engine
                         List<Move> attackMoves = attacker.GetAttackMoves(attackerSquare, this);
                         foreach (Move attackMove in attackMoves)
                         {
-                            if (attackMove.To.Rank == square.Rank && attackMove.To.File == square.File)
+                            if (attackMove.To.Equals(square))
                             {
                                 return true;
                             }

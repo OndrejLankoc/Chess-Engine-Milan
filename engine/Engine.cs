@@ -4,7 +4,8 @@ namespace Engine
     {
         public TranspositionTable TT = new();
         public PawnTTEntry[] PawnTT = new PawnTTEntry[1 << 16];
-        public Move?[,] KillerMoves = new Move?[32, 2];
+        private const int KillersSize = 32;
+        public Move?[,] KillerMoves = new Move?[KillersSize, 2];
         public int[,,] History = new int[2, 64, 64];
         private const int Mate = 100000;
         private const int MateThreshold = Mate - 1000;
@@ -222,6 +223,12 @@ namespace Engine
                     switch (entry.Type)
                     {
                         case NodeType.Exact:
+                            if (board.HalfMoveClock >= 6 && ply <= 2)
+                            {
+                                moves.RemoveAll(m => m.Equals(entry.BestMove));
+                                moves.Insert(0, entry.BestMove);
+                                break;
+                            }
                             bestMove = entry.BestMove;
                             return entry.Score;
 
@@ -245,12 +252,6 @@ namespace Engine
                 {
                     if (entry.Type == NodeType.Exact)
                     {
-                        if (Math.Abs(entry.Score) >= MateThreshold)
-                        {
-                            bestMove = entry.BestMove;
-                            return entry.Score;
-                        }
-
                         moves.RemoveAll(m => m.Equals(entry.BestMove));
                         moves.Insert(0, entry.BestMove);
                     }
@@ -297,7 +298,7 @@ namespace Engine
                 allMovesInfo.Add(board.MakeMove(move));
 
                 int score = Search(board, depth - 1, out _, allMoves, allMovesInfo, ply + 1, alpha, beta);
-                if (Math.Abs(score) >= MateThreshold) score += score > 0 ? score - 1 : score + 1;
+                if (Math.Abs(score) >= MateThreshold) score += score > 0 ? - 1 : 1;
 
                 board.UndoMove(move, allMovesInfo.Last());
                 allMoves.RemoveAt(allMoves.Count - 1);
@@ -407,7 +408,7 @@ namespace Engine
                 }
             }
 
-            moves = Move.OrderMoves(moves, KillerMoves, History, board, ply);
+            moves = Move.OrderMoves(moves, KillerMoves, History, board, Math.Min(ply, KillersSize - 1));
 
             foreach (Move move in moves)
             {
