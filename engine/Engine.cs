@@ -294,11 +294,23 @@ namespace Engine
             int bestScore = board.SideToMove == PieceColor.White ? int.MinValue : int.MaxValue;
             foreach (Move move in moves)
             {
+                int r = 0;
+                int index = moves.IndexOf(move);
+                int score = 0;
                 allMoves.Add(move);
                 allMovesInfo.Add(board.MakeMove(move));
 
-                int score = Search(board, depth - 1, out _, allMoves, allMovesInfo, ply + 1, alpha, beta);
-                if (Math.Abs(score) >= MateThreshold) score += score > 0 ? - 1 : 1;
+                if (depth >= 3 && index >= 5 && board.IsMoveQuiet(move))
+                {
+                    if (!board.IsInCheck(board.SideToMove))
+                    {
+                        r = 1;
+                        score = Search(board, depth - r, out _, allMoves, allMovesInfo, ply + 1, alpha, beta);
+                        if (score > alpha && score < beta) r = 0;
+                    }
+                }
+                if (r == 0) score = Search(board, depth - 1, out _, allMoves, allMovesInfo, ply + 1, alpha, beta);
+                if (Math.Abs(score) >= MateThreshold) score += score > 0 ? -1 : 1;
 
                 board.UndoMove(move, allMovesInfo.Last());
                 allMoves.RemoveAt(allMoves.Count - 1);
@@ -355,7 +367,7 @@ namespace Engine
         private int Quiescence(Board board, List<Move> allMoves, List<MoveInfo> allMovesInfo, int ply, int alpha, int beta)
         {
             List<Move> moves = new List<Move>();
-
+            
             if (board.IsInCheck(board.SideToMove))
             {
                 for (int rank = 0; rank < 8; rank++)

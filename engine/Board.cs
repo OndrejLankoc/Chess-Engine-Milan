@@ -626,7 +626,7 @@ namespace Engine
 
             if (movingPiece == null) return false;
             if (capturedPiece != null) return false;
-            if (EnPassantSquare != null && move.To.Rank == EnPassantSquare.Rank && move.To.File == EnPassantSquare.File) return false;
+            if (EnPassantSquare != null && move.To.Equals(EnPassantSquare)) return false;
             if (movingPiece.Type == PieceType.Pawn && move.PromotedPiece != null) return false;
 
             return true;
