@@ -19,7 +19,7 @@ namespace Engine
                 switch (input)
                 {
                     case "uci":
-                        Console.WriteLine("id name Engine");
+                        Console.WriteLine("id name Milan");
                         Console.WriteLine("id author OL");
                         Console.WriteLine("uciok");
                         break;
@@ -33,7 +33,10 @@ namespace Engine
                         break;
 
                     case string s when s.StartsWith("go"):
-                        engine.Search(board, 4, out Move bestMove, PlayedMoves, PlayedMovesInfo);
+                        int depth = 4;
+                        if (s.Contains("depth")) int.TryParse(s.Split("depth ")[1].Split(' ')[0], out depth);
+
+                        engine.Search(board, depth, out Move bestMove, PlayedMoves, PlayedMovesInfo);
 
                         engine.ClearOldData(board.HalfMoveClock);
 
