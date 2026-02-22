@@ -244,12 +244,11 @@ namespace Engine
         {
             List<Move> moves = new List<Move>();
 
-            int[] relativePosition = { -1, 0, 1 };
-            for (int i = 0; i < relativePosition.Length; i++)
+            for (int i = -1; i <= 1; i++)
             {
-                for (int j = 0; j < relativePosition.Length; j++)
+                for (int j = -1; j <= 1; j++)
                 {
-                    Square destination = new Square(positionOfPiece.Rank + relativePosition[j], positionOfPiece.File + relativePosition[i]);
+                    Square destination = new Square(positionOfPiece.Rank + j, positionOfPiece.File + i);
                     if (destination.IsOnBoard() && (board.IsEmpty(destination) || board.IsEnemy(destination, Color)))
                     {
                         moves.Add(new Move(positionOfPiece, destination));
@@ -341,12 +340,11 @@ namespace Engine
                     break;
 
                 case PieceType.King:
-                    int[] kingRelativePositions = { -1, 0, 1 };
-                    for (int i = 0; i < kingRelativePositions.Length; i++)
+                    for (int i = -1; i <= 1; i++)
                     {
-                        for (int j = 0; j < kingRelativePositions.Length; j++)
+                        for (int j = -1; j <= 1; j++)
                         {
-                            Square destination = new Square(positionOfPiece.Rank + kingRelativePositions[j], positionOfPiece.File + kingRelativePositions[i]);
+                            Square destination = new Square(positionOfPiece.Rank + i, positionOfPiece.File + j);
                             if (destination.IsOnBoard())
                             {
                                 attackMoves.Add(new Move(positionOfPiece, destination));
