@@ -286,7 +286,6 @@ namespace Engine
                     if (move.PromotedPiece == null) move.PromotedPiece = new Piece(PieceType.Queen, piece.Color);
                     Squares[move.To.Rank, move.To.File] = move.PromotedPiece;
                     moveInfo.IsPromotion = true;
-                    moveInfo.PromotedPiece = move.PromotedPiece;
 
                     pieceType = (piece.Color == PieceColor.Black ? 6 : 0) + (int)PieceType.Pawn;
                     squareIndex = move.To.Rank * 8 + move.To.File;

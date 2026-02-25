@@ -127,7 +127,6 @@ namespace Engine
         public Square? EnPassantSquare { get; set; }
         public int HalfMoveClock { get; set; }
         public bool IsPromotion { get; set; }
-        public Piece? PromotedPiece { get; set; }
         public ulong BoardHash { get; set; }
         public ulong PawnHash { get; set; }
         public MoveInfo(Piece? takenPiece = null)
@@ -139,7 +138,6 @@ namespace Engine
             EnPassantSquare = null;
             HalfMoveClock = 0;
             IsPromotion = false;
-            PromotedPiece = null;
         }
     }
 }
