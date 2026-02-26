@@ -577,6 +577,7 @@ namespace Engine
             score -= 12 * Math.Max(0, whiteIslands - 1);
             score += 12 * Math.Max(0, blackIslands - 1);
 
+            PawnTT[index].Key = board.PawnHash;
             PawnTT[index].Score = score;
             return score;
         }
