@@ -51,7 +51,7 @@
             //         playedMovesInfo.Add(board.MakeMove(bestMove));
             //         playedMoves.Add(bestMove);
 
-            //         engine.ClearOldData(board.HalfMoveClock);
+            //         engine.ClearOldData(board.FullMoveNumber);
 
             //         Console.WriteLine($"{bestMove.ToString()}");
             //     }

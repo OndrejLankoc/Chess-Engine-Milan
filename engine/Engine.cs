@@ -358,7 +358,7 @@ namespace Engine
                     nodeType = NodeType.LowerBound;
                 }
 
-                TT.Store(board.BoardHash, bestScore, depth, nodeType, bestMove, board.HalfMoveClock);
+                TT.Store(board.BoardHash, bestScore, depth, nodeType, bestMove, board.FullMoveNumber);
             }
 
             return bestScore;

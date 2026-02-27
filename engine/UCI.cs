@@ -38,7 +38,7 @@ namespace Engine
 
                         engine.Search(board, depth, out Move bestMove, PlayedMoves, PlayedMovesInfo);
 
-                        engine.ClearOldData(board.HalfMoveClock);
+                        engine.ClearOldData(board.FullMoveNumber);
 
                         Console.WriteLine($"bestmove {bestMove.ToString()}");
                         break;
