@@ -218,7 +218,7 @@ namespace Engine
             int squareIndex = move.From.Rank * 8 + move.From.File;
             BoardHash ^= Hash.PieceSquare[pieceType, squareIndex];
 
-            if (piece.Type == PieceType.Pawn) PawnHash ^= Hash.PawnSquare[piece.Color == PieceColor.White ? 0 : 1, squareIndex];
+            if (piece.Type == PieceType.Pawn) PawnHash ^= Hash.PieceSquare[piece.Color == PieceColor.White ? 0 : 6, squareIndex];
 
             if (moveInfo.TakenPiece != null)
             {
@@ -228,13 +228,13 @@ namespace Engine
 
                 if (moveInfo.TakenPiece.Type == PieceType.Pawn)
                 {
-                    PawnHash ^= Hash.PawnSquare[moveInfo.TakenPiece.Color == PieceColor.White ? 0 : 1, squareIndex];
+                    PawnHash ^= Hash.PieceSquare[moveInfo.TakenPiece.Color == PieceColor.White ? 0 : 6, squareIndex];
                 }
             }
             squareIndex = move.To.Rank * 8 + move.To.File;
             BoardHash ^= Hash.PieceSquare[pieceType, squareIndex];
 
-            if (piece.Type == PieceType.Pawn) PawnHash ^= Hash.PawnSquare[piece.Color == PieceColor.White ? 0 : 1, squareIndex];
+            if (piece.Type == PieceType.Pawn) PawnHash ^= Hash.PieceSquare[piece.Color == PieceColor.White ? 0 : 6, squareIndex];
 
             if (piece.Type == PieceType.King)
             {
@@ -293,7 +293,7 @@ namespace Engine
                     pieceType = (piece.Color == PieceColor.Black ? 6 : 0) + (int)move.PromotedPiece!.Type;
                     BoardHash ^= Hash.PieceSquare[pieceType, squareIndex];
 
-                    PawnHash ^= Hash.PawnSquare[piece.Color == PieceColor.White ? 0 : 1, squareIndex];
+                    PawnHash ^= Hash.PieceSquare[piece.Color == PieceColor.White ? 0 : 6, squareIndex];
                 }
 
                 if (EnPassantSquare != null && EnPassantSquare.Equals(move.To))
@@ -303,7 +303,7 @@ namespace Engine
                     squareIndex = (move.To.Rank + (piece.Color == PieceColor.White ? 1 : -1)) * 8 + move.To.File;
                     BoardHash ^= Hash.PieceSquare[capturedPawnType, squareIndex];
 
-                    PawnHash ^= Hash.PawnSquare[capturedPawn.Color == PieceColor.White ? 0 : 1, squareIndex];
+                    PawnHash ^= Hash.PieceSquare[capturedPawn.Color == PieceColor.White ? 0 : 6, squareIndex];
 
                     Squares[move.To.Rank + (piece.Color == PieceColor.White ? 1 : -1), move.To.File] = null;
                     moveInfo.IsEnPassant = true;
@@ -682,9 +682,9 @@ namespace Engine
                     Piece? piece = GetPiece(new Square(rank, file));
                     if (piece != null && piece.Type == PieceType.Pawn)
                     {
-                        int color = piece.Color == PieceColor.White ? 0 : 1;
+                        int color = piece.Color == PieceColor.White ? 0 : 6;
                         int square = rank * 8 + file;
-                        hash ^= Hash.PawnSquare[color, square];
+                        hash ^= Hash.PieceSquare[color, square];
                     }
                 }
             }
