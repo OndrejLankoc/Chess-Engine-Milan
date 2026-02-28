@@ -62,31 +62,30 @@ namespace Engine
             if (input.Contains("startpos"))
             {
                 board.SetupBoard();
-
-                if (input.Contains("moves"))
-                {
-                    string moves = input.Split("moves ")[1];
-                    foreach (string move in moves.Split(' '))
-                    {
-                        Move.TryParse(board.SideToMove, move, out Move parsedMove);
-
-                        if (!board.IsMoveLegal(parsedMove))
-                        {
-                            Console.WriteLine("Illegal move in UCI input.");
-                            Console.WriteLine($"Move: {move}");
-                            Environment.Exit(1);
-                        }
-
-                        PlayedMovesInfo.Add(board.MakeMove(parsedMove));
-                        PlayedMoves.Add(parsedMove);
-                    }
-                }
             }
-
             else if (input.Contains("fen"))
             {
                 string fen = input.Split("fen ")[1];
                 board.SetupBoard(fen);
+            }
+
+            if (input.Contains("moves") && board.BoardHash != 0)
+            {
+                string moves = input.Split("moves ")[1];
+                foreach (string move in moves.Split(' '))
+                {
+                    Move.TryParse(board.SideToMove, move, out Move parsedMove);
+
+                    if (!board.IsMoveLegal(parsedMove))
+                    {
+                        Console.WriteLine("Illegal move in UCI input.");
+                        Console.WriteLine($"Move: {move}");
+                        Environment.Exit(1);
+                    }
+
+                    PlayedMovesInfo.Add(board.MakeMove(parsedMove));
+                    PlayedMoves.Add(parsedMove);
+                }
             }
         }
     }
