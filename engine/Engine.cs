@@ -183,6 +183,7 @@ namespace Engine
 
             evaluation += Mobility(board, gamePhase);
             evaluation += PawnStructure(board);
+            evaluation += KingSafety(board);
             return evaluation;
         }
 
@@ -579,6 +580,94 @@ namespace Engine
 
             PawnTT[index].Key = board.PawnHash;
             PawnTT[index].Score = score;
+            return score;
+        }
+
+        private int KingSafety(Board board)
+        {
+            int score = 0;
+            int[] pawnShieldBonus = { 15, 9, 3, -20 };
+            int[] neighboringPawnShieldBonus = { 8, 4, 2, -10 };
+
+            Square whiteKing = board.GetKingPosition(PieceColor.White);
+            Square blackKing = board.GetKingPosition(PieceColor.Black);
+
+            if (whiteKing.File == 3 || whiteKing.File == 4) score -= 15;
+            else if (whiteKing.File <= 2)
+            {
+                for (int file = 0; file <= 2; file++)
+                {
+                    for (int rank = 6; rank >= 4; rank--)
+                    {
+                        Piece? piece = board.GetPiece(new Square(rank, file));
+                        if (piece != null && piece.Type == PieceType.Pawn && piece.Color == PieceColor.White)
+                        {
+                            score += rank == whiteKing.Rank
+                                ? pawnShieldBonus[6 - rank]
+                                : neighboringPawnShieldBonus[6 - rank];
+                            break;
+                        }
+
+                        if (rank == 5)
+                            score += rank == whiteKing.Rank ? pawnShieldBonus[3] : neighboringPawnShieldBonus[3];
+                    }
+                }
+            }
+            else if (whiteKing.File >= 5)
+            {
+                for (int file = 5; file <= 7; file++)
+                {
+                    for (int rank = 6; rank >= 4; rank--)
+                    {
+                        Piece? piece = board.GetPiece(new Square(rank, file));
+                        if (piece != null && piece.Type == PieceType.Pawn && piece.Color == PieceColor.White)
+                        {
+                            score += rank == whiteKing.Rank
+                                ? pawnShieldBonus[6 - rank]
+                                : neighboringPawnShieldBonus[6 - rank];
+                            break;
+                        }
+
+                        if (rank == 5)
+                            score += rank == whiteKing.Rank ? pawnShieldBonus[3] : neighboringPawnShieldBonus[3];
+                    }
+                }
+            }
+
+            if (blackKing.File == 3 || blackKing.File == 4) score += 15;
+            else if (blackKing.File <= 2)
+            {
+                for (int file = 0; file <= 2; file++)
+                {
+                    for (int rank = 1; rank <= 3; rank++)
+                    {
+                        Piece? piece = board.GetPiece(new Square(rank, file));
+                        if (piece != null && piece.Type == PieceType.Pawn && piece.Color == PieceColor.Black)
+                        {
+                            score -= rank == blackKing.Rank ? pawnShieldBonus[rank - 1] : neighboringPawnShieldBonus[rank - 1];
+                            break;
+                        }
+                        if (rank == 3) score -= rank == blackKing.Rank ? pawnShieldBonus[3] : neighboringPawnShieldBonus[3];
+                    }
+                }
+            }
+            else if (blackKing.File >= 5)
+            {
+                for (int file = 5; file <= 7; file++)
+                {
+                    for (int rank = 1; rank <= 3; rank++)
+                    {
+                        Piece? piece = board.GetPiece(new Square(rank, file));
+                        if (piece != null && piece.Type == PieceType.Pawn && piece.Color == PieceColor.Black)
+                        {
+                            score -= rank == blackKing.Rank ? pawnShieldBonus[rank - 1] : neighboringPawnShieldBonus[rank - 1];
+                            break;
+                        }
+                        if (rank == 3) score -= rank == blackKing.Rank ? pawnShieldBonus[3] : neighboringPawnShieldBonus[3];
+                    }
+                }
+            }
+
             return score;
         }
 
