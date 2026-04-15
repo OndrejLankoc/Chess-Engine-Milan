@@ -1,0 +1,5 @@
+/home/pc/Plocha/lichess-bot/engines/engine/engine
+/home/pc/Plocha/lichess-bot/engines/engine/engine.dll
+/home/pc/Plocha/lichess-bot/engines/engine/engine.deps.json
+/home/pc/Plocha/lichess-bot/engines/engine/engine.runtimeconfig.json
+/home/pc/Plocha/lichess-bot/engines/engine/engine.pdb

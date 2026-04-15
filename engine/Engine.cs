@@ -183,7 +183,7 @@ namespace Engine
 
             evaluation += Mobility(board, gamePhase);
             evaluation += PawnStructure(board);
-            evaluation += KingSafety(board);
+            evaluation += KingSafety(board, gamePhase);
             return evaluation;
         }
 
@@ -583,11 +583,13 @@ namespace Engine
             return score;
         }
 
-        private int KingSafety(Board board)
+        private int KingSafety(Board board, double gamePhase)
         {
             int score = 0;
             int[] pawnShieldBonus = { 15, 9, 3, -20 };
             int[] neighboringPawnShieldBonus = { 8, 4, 2, -10 };
+            int startFile = -1;
+            int endFile = -1;
 
             Square whiteKing = board.GetKingPosition(PieceColor.White);
             Square blackKing = board.GetKingPosition(PieceColor.Black);
@@ -595,80 +597,68 @@ namespace Engine
             if (whiteKing.File == 3 || whiteKing.File == 4) score -= 15;
             else if (whiteKing.File <= 2)
             {
-                for (int file = 0; file <= 2; file++)
-                {
-                    for (int rank = 6; rank >= 4; rank--)
-                    {
-                        Piece? piece = board.GetPiece(new Square(rank, file));
-                        if (piece != null && piece.Type == PieceType.Pawn && piece.Color == PieceColor.White)
-                        {
-                            score += rank == whiteKing.Rank
-                                ? pawnShieldBonus[6 - rank]
-                                : neighboringPawnShieldBonus[6 - rank];
-                            break;
-                        }
-
-                        if (rank == 5)
-                            score += rank == whiteKing.Rank ? pawnShieldBonus[3] : neighboringPawnShieldBonus[3];
-                    }
-                }
+                startFile = 0;
+                endFile = 2;
             }
             else if (whiteKing.File >= 5)
             {
-                for (int file = 5; file <= 7; file++)
+                startFile = 5;
+                endFile = 7;
+ 
+            }
+
+            if (startFile != -1 && endFile != -1)
+            {
+                for (int file = startFile; file <= endFile; file++)
                 {
                     for (int rank = 6; rank >= 4; rank--)
                     {
                         Piece? piece = board.GetPiece(new Square(rank, file));
                         if (piece != null && piece.Type == PieceType.Pawn && piece.Color == PieceColor.White)
                         {
-                            score += rank == whiteKing.Rank
-                                ? pawnShieldBonus[6 - rank]
-                                : neighboringPawnShieldBonus[6 - rank];
+                            score += file == whiteKing.File ? pawnShieldBonus[6 - rank] : neighboringPawnShieldBonus[6 - rank];
                             break;
                         }
 
-                        if (rank == 5)
-                            score += rank == whiteKing.Rank ? pawnShieldBonus[3] : neighboringPawnShieldBonus[3];
+                        if (rank == 4) score += file == whiteKing.File ? pawnShieldBonus[3] : neighboringPawnShieldBonus[3];
                     }
                 }
+
+                startFile = -1;
+                endFile = -1;
             }
 
             if (blackKing.File == 3 || blackKing.File == 4) score += 15;
             else if (blackKing.File <= 2)
             {
-                for (int file = 0; file <= 2; file++)
-                {
-                    for (int rank = 1; rank <= 3; rank++)
-                    {
-                        Piece? piece = board.GetPiece(new Square(rank, file));
-                        if (piece != null && piece.Type == PieceType.Pawn && piece.Color == PieceColor.Black)
-                        {
-                            score -= rank == blackKing.Rank ? pawnShieldBonus[rank - 1] : neighboringPawnShieldBonus[rank - 1];
-                            break;
-                        }
-                        if (rank == 3) score -= rank == blackKing.Rank ? pawnShieldBonus[3] : neighboringPawnShieldBonus[3];
-                    }
-                }
+                startFile = 0;
+                endFile = 2;
             }
             else if (blackKing.File >= 5)
             {
-                for (int file = 5; file <= 7; file++)
+                startFile = 5;
+                endFile = 7;
+            }
+
+            if (startFile != -1 && endFile != -1)
+            {
+                for (int file = startFile; file <= endFile; file++)
                 {
                     for (int rank = 1; rank <= 3; rank++)
                     {
                         Piece? piece = board.GetPiece(new Square(rank, file));
                         if (piece != null && piece.Type == PieceType.Pawn && piece.Color == PieceColor.Black)
                         {
-                            score -= rank == blackKing.Rank ? pawnShieldBonus[rank - 1] : neighboringPawnShieldBonus[rank - 1];
+                            score -= file == blackKing.File ? pawnShieldBonus[rank - 1] : neighboringPawnShieldBonus[rank - 1];
                             break;
                         }
-                        if (rank == 3) score -= rank == blackKing.Rank ? pawnShieldBonus[3] : neighboringPawnShieldBonus[3];
+
+                        if (rank == 3) score -= file == blackKing.File ? pawnShieldBonus[3] : neighboringPawnShieldBonus[3];
                     }
                 }
             }
 
-            return score;
+            return (int)(score * (1 - gamePhase));
         }
 
         public void StoreKillerMove(Move move, int ply)
