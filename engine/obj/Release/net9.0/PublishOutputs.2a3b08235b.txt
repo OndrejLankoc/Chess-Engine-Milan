@@ -1,0 +1,5 @@
+/media/pc/Samsung USB/projekt/engine/bin/Release/net9.0/publish/engine
+/media/pc/Samsung USB/projekt/engine/bin/Release/net9.0/publish/engine.dll
+/media/pc/Samsung USB/projekt/engine/bin/Release/net9.0/publish/engine.deps.json
+/media/pc/Samsung USB/projekt/engine/bin/Release/net9.0/publish/engine.runtimeconfig.json
+/media/pc/Samsung USB/projekt/engine/bin/Release/net9.0/publish/engine.pdb

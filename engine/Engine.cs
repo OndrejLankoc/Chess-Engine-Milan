@@ -534,7 +534,7 @@ namespace Engine
                 score += 12 * Math.Max(0, blackFiles[file] - 1);
 
                 bool[] isolation = { false, false, false, false }; // [0] = White from left, [1] = White from right, [2] = Black from left, [3] = Black from right
-                
+
                 if (file > 0)
                 {
                     if (whiteFiles[file] > 0 && whiteFiles[file - 1] == 0) isolation[0] = true;
@@ -582,8 +582,18 @@ namespace Engine
             PawnTT[index].Score = score;
             return score;
         }
-
+        
         private int KingSafety(Board board, double gamePhase)
+        {
+            int score = 0;
+
+            score += PawnShield(board, gamePhase);
+            score += KingZoneAttack(board);
+
+            return score;
+        }
+
+        private int PawnShield(Board board, double gamePhase)
         {
             int score = 0;
             int[] pawnShieldBonus = { 15, 9, 3, -20 };
@@ -604,14 +614,14 @@ namespace Engine
             {
                 startFile = 5;
                 endFile = 7;
- 
+
             }
 
             if (startFile != -1 && endFile != -1)
             {
                 for (int file = startFile; file <= endFile; file++)
                 {
-                    for (int rank = 6; rank >= 4; rank--)
+                    for (int rank = Math.Min(6, whiteKing.Rank); rank >= 4; rank--)
                     {
                         Piece? piece = board.GetPiece(new Square(rank, file));
                         if (piece != null && piece.Type == PieceType.Pawn && piece.Color == PieceColor.White)
@@ -644,7 +654,7 @@ namespace Engine
             {
                 for (int file = startFile; file <= endFile; file++)
                 {
-                    for (int rank = 1; rank <= 3; rank++)
+                    for (int rank = Math.Max(1, blackKing.Rank); rank <= 3; rank++)
                     {
                         Piece? piece = board.GetPiece(new Square(rank, file));
                         if (piece != null && piece.Type == PieceType.Pawn && piece.Color == PieceColor.Black)
@@ -659,6 +669,69 @@ namespace Engine
             }
 
             return (int)(score * (1 - gamePhase));
+        }
+
+        private int KingZoneAttack(Board board)
+        {
+            int score = 0;
+
+            int[] attackerValue = { 0, 20, 20, 40, 80 }; // P, N, B, R, Q
+            int[] attackWeight = { 0, 0, 50, 75, 88, 94, 97, 99 }; // 0, 1, 2, 3, 4, 5, 6, 7+ attackers
+
+            int whiteAttackers = 0;
+            int blackAttackers = 0;
+            int whiteValueOfAttacks = 0;
+            int blackValueOfAttacks = 0;
+
+            List<Square> whiteKingZone = new List<Square>();
+            List<Square> blackKingZone = new List<Square>();
+            Square whiteKing = board.GetKingPosition(PieceColor.White);
+            Square blackKing = board.GetKingPosition(PieceColor.Black);
+
+            for (int i = -1; i <= 1; i++)
+            {
+                for (int j = -1; j <= 1; j++)
+                {
+                    Square whiteSquare = new Square(whiteKing.Rank + i, whiteKing.File + j);
+                    if (whiteSquare.IsOnBoard()) whiteKingZone.Add(whiteSquare);
+
+                    Square blackSquare = new Square(blackKing.Rank + i, blackKing.File + j);
+                    if (blackSquare.IsOnBoard()) blackKingZone.Add(blackSquare);
+                }
+            }
+
+            for (int file = 0; file < 8; file++)
+            {
+                for (int rank = 0; rank < 8; rank++)
+                {
+                    Piece? piece = board.GetPiece(new Square(rank, file));
+                    if (piece == null || piece.Type == PieceType.King || piece.Type == PieceType.Pawn) continue;
+
+                    bool isAttacker = false;
+                    List<Move> moves = piece.GetMoves(board, new Square(rank, file));
+                    foreach (Move move in moves)
+                    {
+                        if (piece.Color == PieceColor.White && blackKingZone.Contains(move.To))
+                        {
+                            isAttacker = true;
+                            whiteValueOfAttacks += attackerValue[(int)piece.Type];
+                        }
+                        else if (piece.Color == PieceColor.Black && whiteKingZone.Contains(move.To))
+                        {
+                            isAttacker = true;
+                            blackValueOfAttacks += attackerValue[(int)piece.Type];
+                        }
+                    }
+
+                    if (isAttacker && piece.Color == PieceColor.White) whiteAttackers++;
+                    else if (isAttacker && piece.Color == PieceColor.Black) blackAttackers++;
+                }
+            }
+
+            score += (int)(whiteValueOfAttacks * attackWeight[Math.Min(whiteAttackers, attackWeight.Length - 1)] / 100);
+            score -= (int)(blackValueOfAttacks * attackWeight[Math.Min(blackAttackers, attackWeight.Length - 1)] / 100);
+
+            return score;
         }
 
         public void StoreKillerMove(Move move, int ply)

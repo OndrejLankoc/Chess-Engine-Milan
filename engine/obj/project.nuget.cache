@@ -1,8 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "hWWHIx2sOpw=",
+  "dgSpecHash": "kAZ2GAPw83s=",
   "success": true,
   "projectFilePath": "/media/pc/Samsung USB/projekt/engine/engine.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "/home/pc/.nuget/packages/microsoft.netcore.app.runtime.win-x64/9.0.16/microsoft.netcore.app.runtime.win-x64.9.0.16.nupkg.sha512",
+    "/home/pc/.nuget/packages/microsoft.aspnetcore.app.runtime.win-x64/9.0.16/microsoft.aspnetcore.app.runtime.win-x64.9.0.16.nupkg.sha512",
+    "/home/pc/.nuget/packages/microsoft.netcore.app.host.win-x64/9.0.16/microsoft.netcore.app.host.win-x64.9.0.16.nupkg.sha512"
+  ],
   "logs": []
 }
