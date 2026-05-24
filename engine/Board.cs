@@ -510,24 +510,10 @@ namespace Engine
 
             if (FullMoveNumber >= 4 && HalfMoveClock >= 6)
             {
-                Board previousPositions = Clone();
-                int positionCount = 1;
-
-                for (int i = listOfAllMoves.Count - 1; i >= 0 && i >= listOfAllMoves.Count - HalfMoveClock; i--)
+                if (RepetitionCount(listOfAllMoves, listOfAllMovesInfo) >= 3)
                 {
-                    Move move = listOfAllMoves[i];
-                    MoveInfo moveInfo = listOfAllMovesInfo[i];
-                    if (!CastlingRights.SequenceEqual(moveInfo.CastlingRights)) break;
-                    previousPositions.UndoMove(move, moveInfo);
-                    if (Equals(previousPositions))
-                    {
-                        positionCount++;
-                        if (positionCount >= 3)
-                        {
-                            reason = "Threefold repetition";
-                            return GameResult.Draw;
-                        }
-                    }
+                    reason = "Threefold repetition";
+                    return GameResult.Draw;
                 }
             }
 
@@ -538,6 +524,30 @@ namespace Engine
             }
 
             return GameResult.Ongoing;
+        }
+
+        public int RepetitionCount(List<Move> allMoves, List<MoveInfo> allMovesInfo)
+        {
+            Board previousPositions = Clone();
+            int positionCount = 1;
+
+            for (int i = allMoves.Count - 1; i >= 0 && i >= allMoves.Count - HalfMoveClock; i--)
+            {
+                Move move = allMoves[i];
+                MoveInfo moveInfo = allMovesInfo[i];
+                if (!CastlingRights.SequenceEqual(moveInfo.CastlingRights)) break;
+                previousPositions.UndoMove(move, moveInfo);
+                if (Equals(previousPositions))
+                {
+                    positionCount++;
+                    if (positionCount >= 3)
+                    {
+                        return positionCount;
+                    }
+                }
+            }
+
+            return positionCount;
         }
 
         public bool IsMoveLegal(Move move)

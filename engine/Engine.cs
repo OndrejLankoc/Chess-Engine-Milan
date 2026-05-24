@@ -219,17 +219,12 @@ namespace Engine
             int alphaOriginal = alpha;
             if (TT.TryGet(board.BoardHash, out TranspositionTableEntry entry))
             {
-                if (entry.Depth >= depth)
+                int positionCount = board.RepetitionCount(allMoves, allMovesInfo);
+                if (entry.Depth >= depth && board.HalfMoveClock < 90 && positionCount < 2)
                 {
                     switch (entry.Type)
                     {
                         case NodeType.Exact:
-                            if (board.HalfMoveClock >= 6 && ply <= 2)
-                            {
-                                moves.RemoveAll(m => m.Equals(entry.BestMove));
-                                moves.Insert(0, entry.BestMove);
-                                break;
-                            }
                             bestMove = entry.BestMove;
                             return entry.Score;
 
@@ -251,17 +246,12 @@ namespace Engine
 
                 else
                 {
-                    if (entry.Type == NodeType.Exact)
+                    if (entry.Type == NodeType.Exact || entry.Type == NodeType.LowerBound)
                     {
                         moves.RemoveAll(m => m.Equals(entry.BestMove));
                         moves.Insert(0, entry.BestMove);
                     }
 
-                    else if (entry.Type == NodeType.LowerBound)
-                    {
-                        moves.RemoveAll(m => m.Equals(entry.BestMove));
-                        moves.Insert(0, entry.BestMove);
-                    }
                     else if (entry.Type == NodeType.UpperBound)
                     {
                         moves.RemoveAll(m => m.Equals(entry.BestMove));

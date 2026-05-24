@@ -66,6 +66,7 @@ namespace Engine
             else if (input.Contains("fen"))
             {
                 string fen = input.Split("fen ")[1];
+                fen = fen.Split(" moves")[0];
                 board.SetupBoard(fen);
             }
 

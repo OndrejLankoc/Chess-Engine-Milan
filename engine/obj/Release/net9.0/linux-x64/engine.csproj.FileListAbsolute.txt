@@ -1,0 +1,15 @@
+/media/pc/Samsung USB/projekt/engine/bin/Release/net9.0/linux-x64/engine
+/media/pc/Samsung USB/projekt/engine/bin/Release/net9.0/linux-x64/engine.deps.json
+/media/pc/Samsung USB/projekt/engine/bin/Release/net9.0/linux-x64/engine.runtimeconfig.json
+/media/pc/Samsung USB/projekt/engine/bin/Release/net9.0/linux-x64/engine.dll
+/media/pc/Samsung USB/projekt/engine/bin/Release/net9.0/linux-x64/engine.pdb
+/media/pc/Samsung USB/projekt/engine/obj/Release/net9.0/linux-x64/engine.GeneratedMSBuildEditorConfig.editorconfig
+/media/pc/Samsung USB/projekt/engine/obj/Release/net9.0/linux-x64/engine.AssemblyInfoInputs.cache
+/media/pc/Samsung USB/projekt/engine/obj/Release/net9.0/linux-x64/engine.AssemblyInfo.cs
+/media/pc/Samsung USB/projekt/engine/obj/Release/net9.0/linux-x64/engine.csproj.CoreCompileInputs.cache
+/media/pc/Samsung USB/projekt/engine/obj/Release/net9.0/linux-x64/engine.sourcelink.json
+/media/pc/Samsung USB/projekt/engine/obj/Release/net9.0/linux-x64/engine.dll
+/media/pc/Samsung USB/projekt/engine/obj/Release/net9.0/linux-x64/refint/engine.dll
+/media/pc/Samsung USB/projekt/engine/obj/Release/net9.0/linux-x64/engine.pdb
+/media/pc/Samsung USB/projekt/engine/obj/Release/net9.0/linux-x64/engine.genruntimeconfig.cache
+/media/pc/Samsung USB/projekt/engine/obj/Release/net9.0/linux-x64/ref/engine.dll
