@@ -7,8 +7,9 @@ namespace Engine
         private const int KillersSize = 32;
         public Move?[,] KillerMoves = new Move?[KillersSize, 2];
         public int[,,] History = new int[2, 64, 64];
-        private const int Mate = 100000;
+        private const int Mate = 100_000;
         private const int MateThreshold = Mate - 1000;
+        private const int Infinity = 1_000_000;
 
         public int Evaluate(Board board)
         {
@@ -37,7 +38,7 @@ namespace Engine
                 { 13, 8, 8, 10, 13, 0, 2, -7 },
                 { 0, 0, 0, 0, 0, 0, 0, 0 }
             };
-            
+
             int[,] mgKnightSquareTable =
             {
                 { -167, -89, -34, -49, 61, -97, -15, -107 },
@@ -133,7 +134,7 @@ namespace Engine
                 { -22, -23, -30, -16, -16, -23, -36, -32 },
                 { -33, -28, -22, -43, -5, -32, -20, -41 }
             };
-            
+
             int[,] mgKingSquareTable =
             {
                 { -65, 23, 16, -15, -56, -34, 2, 13 },
@@ -187,10 +188,25 @@ namespace Engine
             return evaluation;
         }
 
-        public int Search(Board board, int depth, out Move bestMove, List<Move> allMoves, List<MoveInfo> allMovesInfo, int ply = 0, int alpha = int.MinValue, int beta = int.MaxValue, bool nullMoveAllowed = true)
+        public Move IterativeDeepening(Board board, int maxDepth, List<Move> allMoves, List<MoveInfo> allMovesInfo)
+        {
+            Move bestMove = null;
+
+            for (int i = 1; i <= maxDepth; i++)
+            {
+                Search(board, i, out bestMove, allMoves, allMovesInfo);
+            }
+
+            return bestMove!;
+        }
+
+        public int Search(Board board, int depth, out Move bestMove, List<Move> allMoves, List<MoveInfo> allMovesInfo, int ply = 0, int alpha = -Infinity, int beta = Infinity, bool nullMoveAllowed = true)
         {
             bestMove = null;
+            int r = 0;
             List<Move> moves = new List<Move>();
+
+
             for (int rank = 0; rank < 8; rank++)
             {
                 for (int file = 0; file < 8; file++)
@@ -244,7 +260,7 @@ namespace Engine
                     }
                 }
 
-                else
+                else if (entry.BestMove != null)
                 {
                     if (entry.Type == NodeType.Exact || entry.Type == NodeType.LowerBound)
                     {
@@ -264,7 +280,7 @@ namespace Engine
             {
                 if (board.EndgamePhase() < 0.7)
                 {
-                    int r = 2;
+                    r = 2;
                     MoveInfo nullMoveInfo = board.MakeMove();
 
                     if (board.SideToMove == PieceColor.White)
@@ -285,19 +301,23 @@ namespace Engine
             int bestScore = board.SideToMove == PieceColor.White ? int.MinValue : int.MaxValue;
             foreach (Move move in moves)
             {
-                int r = 0;
+                r = 0;
                 int index = moves.IndexOf(move);
                 int score = 0;
+                bool isMoveQuiet = board.IsMoveQuiet(move);
+
                 allMoves.Add(move);
                 allMovesInfo.Add(board.MakeMove(move));
 
-                if (depth >= 3 && index >= 5 && board.IsMoveQuiet(move))
+                if (depth >= 3 && index >= 5 && isMoveQuiet)
                 {
                     if (!board.IsInCheck(board.SideToMove))
                     {
-                        r = 1;
-                        score = Search(board, depth - r, out _, allMoves, allMovesInfo, ply + 1, alpha, beta);
-                        if (score > alpha && score < beta) r = 0;
+                        r = index >= 10 ? 2 : 1;
+                        score = Search(board, depth - 1 - r, out _, allMoves, allMovesInfo, ply + 1, alpha, beta);
+
+                        if (board.SideToMove == PieceColor.White && score < beta ||
+                            board.SideToMove == PieceColor.Black && score > alpha) r = 0;
                     }
                 }
                 if (r == 0) score = Search(board, depth - 1, out _, allMoves, allMovesInfo, ply + 1, alpha, beta);
@@ -337,20 +357,17 @@ namespace Engine
                 }
             }
 
-            if (depth >= 2)
+            NodeType nodeType = NodeType.Exact;
+            if (bestScore <= alphaOriginal)
             {
-                NodeType nodeType = NodeType.Exact;
-                if (bestScore <= alphaOriginal)
-                {
-                    nodeType = NodeType.UpperBound;
-                }
-                else if (bestScore >= beta)
-                {
-                    nodeType = NodeType.LowerBound;
-                }
-
-                TT.Store(board.BoardHash, bestScore, depth, nodeType, bestMove, board.FullMoveNumber);
+                nodeType = NodeType.UpperBound;
             }
+            else if (bestScore >= beta)
+            {
+                nodeType = NodeType.LowerBound;
+            }
+
+            if (r == 0) TT.Store(board.BoardHash, bestScore, depth, nodeType, bestMove);
 
             return bestScore;
         }
@@ -358,6 +375,7 @@ namespace Engine
         private int Quiescence(Board board, List<Move> allMoves, List<MoveInfo> allMovesInfo, int ply, int alpha, int beta)
         {
             List<Move> moves = new List<Move>();
+            int alphaOriginal = alpha;
             
             if (board.IsInCheck(board.SideToMove))
             {
@@ -374,6 +392,15 @@ namespace Engine
 
             else
             {
+                if (TT.TryGet(board.BoardHash, out TranspositionTableEntry entry))
+                {
+                    if (entry.Type == NodeType.Exact) return entry.Score;
+                    else if (entry.Type == NodeType.LowerBound) alpha = Math.Max(alpha, entry.Score);
+                    else if (entry.Type == NodeType.UpperBound) beta = Math.Min(beta, entry.Score);
+
+                    if (alpha >= beta) return entry.Score;
+                }
+
                 int standPat = Evaluate(board);
                 if (board.SideToMove == PieceColor.White)
                 {
@@ -431,7 +458,15 @@ namespace Engine
                 if (alpha >= beta) break;
             }
 
-            return board.SideToMove == PieceColor.White ? alpha : beta;
+            int bestScore = board.SideToMove == PieceColor.White ? alpha : beta;
+
+            NodeType nodeType = NodeType.Exact;
+            if (bestScore <= alphaOriginal) nodeType = NodeType.UpperBound;
+            else if (bestScore >= beta) nodeType = NodeType.LowerBound;
+
+            TT.Store(board.BoardHash, bestScore, 0, nodeType, null);
+
+            return bestScore;
         }
 
         private int Mobility(Board board, double gamePhase)
@@ -738,9 +773,8 @@ namespace Engine
             History[(int)color, from, to] += depth * depth;
         }
 
-        public void ClearOldData(int halfMoveClock)
+        public void ClearOldData()
         {
-            TT.ClearOldEntries(halfMoveClock);
             KillerMoves = new Move?[32, 2];
             for (int color = 0; color < 2; color++)
             {

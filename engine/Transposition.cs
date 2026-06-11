@@ -9,50 +9,42 @@ namespace Engine
 
     public class TranspositionTableEntry
     {
+        public ulong Key { get; set; }
         public int Score { get; set; }
         public int Depth { get; set; }
         public NodeType Type { get; set; }
-        public Move BestMove { get; set; }
+        public Move? BestMove { get; set; }
         public int Age { get; set; }
     }
 
     public class TranspositionTable
     {
-        private Dictionary<ulong, TranspositionTableEntry> table = new();
+        private TranspositionTableEntry?[] table = new TranspositionTableEntry[1 << 22];
 
-        public void Store(ulong hash, int score, int depth, NodeType type, Move bestMove, int age)
+        public void Store(ulong hash, int score, int depth, NodeType type, Move? bestMove)
         {
-            if (table.TryGetValue(hash, out TranspositionTableEntry entry))
+            if (TryGet(hash, out TranspositionTableEntry? entry) && entry.Depth >= depth)
             {
-                if (entry.Depth >= depth)
-                {
-                    return;
-                }
+                return;
             }
 
-            table[hash] = new TranspositionTableEntry
+            int index = (int)(hash & (ulong)(table.Length - 1));
+            table[index] = new TranspositionTableEntry
             {
+                Key = hash,
                 Depth = depth,
                 Score = score,
                 Type = type,
                 BestMove = bestMove,
-                Age = age
             };
             
         }
 
-        public bool TryGet(ulong hash, out TranspositionTableEntry entry)
+        public bool TryGet(ulong hash, out TranspositionTableEntry? entry)
         {
-            return table.TryGetValue(hash, out entry);
-        }
-
-        public void ClearOldEntries(int currentAge)
-        {
-            var keysToRemove = table.Where(ktr => ktr.Value.Age < currentAge - 4).Select(kvp => kvp.Key).ToList();
-            foreach (var key in keysToRemove)
-            {
-                table.Remove(key);
-            }
+            int index = (int)(hash & (ulong)(table.Length - 1));
+            entry = table[index];
+            return entry != null && entry.Key == hash;
         }
     }
 

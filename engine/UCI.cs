@@ -19,7 +19,7 @@ namespace Engine
                 switch (input)
                 {
                     case "uci":
-                        Console.WriteLine("id name Milan");
+                        Console.WriteLine("id name Milan 2026-06-11");
                         Console.WriteLine("id author OL");
                         Console.WriteLine("uciok");
                         break;
@@ -33,12 +33,13 @@ namespace Engine
                         break;
 
                     case string s when s.StartsWith("go"):
-                        int depth = 4;
+                        int depth = 6;
                         if (s.Contains("depth")) int.TryParse(s.Split("depth ")[1].Split(' ')[0], out depth);
 
-                        engine.Search(board, depth, out Move bestMove, PlayedMoves, PlayedMovesInfo);
+                        // engine.Search(board, depth, out Move bestMove, PlayedMoves, PlayedMovesInfo);
+                        Move bestMove = engine.IterativeDeepening(board, depth, PlayedMoves, PlayedMovesInfo);
 
-                        engine.ClearOldData(board.FullMoveNumber);
+                        engine.ClearOldData();
 
                         Console.WriteLine($"bestmove {bestMove.ToString()}");
                         break;
