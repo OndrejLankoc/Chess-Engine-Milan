@@ -10,6 +10,8 @@ namespace Engine
         private const int Mate = 100_000;
         private const int MateThreshold = Mate - 1000;
         private const int Infinity = 1_000_000;
+        private TimeSpan _timeLimit;
+        private DateTime _startTime;
 
         public int Evaluate(Board board)
         {
@@ -200,12 +202,33 @@ namespace Engine
             return bestMove!;
         }
 
+        public Move IterativeDeepening(Board board, TimeSpan timeLimitSoft, TimeSpan timeLimitHard, List<Move> allMoves, List<MoveInfo> allMovesInfo)
+        {
+            Move bestMove = null;
+            _startTime = DateTime.Now;
+            _timeLimit = timeLimitHard;
+            int depth = 1;
+
+            do
+            {
+                if ((DateTime.Now - _startTime) >= timeLimitSoft) break;
+
+                Search(board, depth, out Move candidate, allMoves, allMovesInfo);
+                depth++;
+
+                if ((DateTime.Now - _startTime) < _timeLimit) bestMove = candidate;
+            } while (true);
+
+            return bestMove!;
+        }
+
         public int Search(Board board, int depth, out Move bestMove, List<Move> allMoves, List<MoveInfo> allMovesInfo, int ply = 0, int alpha = -Infinity, int beta = Infinity, bool nullMoveAllowed = true)
         {
             bestMove = null;
             int r = 0;
             List<Move> moves = new List<Move>();
 
+            if ((DateTime.Now - _startTime) >= _timeLimit) return 0;
 
             for (int rank = 0; rank < 8; rank++)
             {
@@ -309,7 +332,7 @@ namespace Engine
                 allMoves.Add(move);
                 allMovesInfo.Add(board.MakeMove(move));
 
-                if (depth >= 3 && index >= 5 && isMoveQuiet)
+                if (depth >= 3 && index >= 3 && isMoveQuiet)
                 {
                     if (!board.IsInCheck(board.SideToMove))
                     {
@@ -367,7 +390,7 @@ namespace Engine
                 nodeType = NodeType.LowerBound;
             }
 
-            if (r == 0) TT.Store(board.BoardHash, bestScore, depth, nodeType, bestMove);
+            TT.Store(board.BoardHash, bestScore, depth, nodeType, bestMove);
 
             return bestScore;
         }

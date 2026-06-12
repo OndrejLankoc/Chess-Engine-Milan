@@ -19,7 +19,7 @@ namespace Engine
 
     public class TranspositionTable
     {
-        private TranspositionTableEntry?[] table = new TranspositionTableEntry[1 << 22];
+        private TranspositionTableEntry?[] _table = new TranspositionTableEntry[1 << 22];
 
         public void Store(ulong hash, int score, int depth, NodeType type, Move? bestMove)
         {
@@ -28,8 +28,8 @@ namespace Engine
                 return;
             }
 
-            int index = (int)(hash & (ulong)(table.Length - 1));
-            table[index] = new TranspositionTableEntry
+            int index = (int)(hash & (ulong)(_table.Length - 1));
+            _table[index] = new TranspositionTableEntry
             {
                 Key = hash,
                 Depth = depth,
@@ -42,8 +42,8 @@ namespace Engine
 
         public bool TryGet(ulong hash, out TranspositionTableEntry? entry)
         {
-            int index = (int)(hash & (ulong)(table.Length - 1));
-            entry = table[index];
+            int index = (int)(hash & (ulong)(_table.Length - 1));
+            entry = _table[index];
             return entry != null && entry.Key == hash;
         }
     }

@@ -7,7 +7,7 @@ namespace Engine
         public static ulong[] CastlingRights = new ulong[4];
         public static ulong[] EnPassantFile = new ulong[8];
 
-        static Random rng = new Random(314159);
+        static Random _rng = new Random(314159);
 
         static Hash()
         {
@@ -15,20 +15,20 @@ namespace Engine
             {
                 for (int j = 0; j < 64; j++)
                 {
-                    PieceSquare[i, j] = (ulong)rng.Next() << 32 | (ulong)rng.Next();
+                    PieceSquare[i, j] = (ulong)_rng.Next() << 32 | (ulong)_rng.Next();
                 }
             }
 
-            SideToMove = (ulong)rng.Next() << 32 | (ulong)rng.Next();
+            SideToMove = (ulong)_rng.Next() << 32 | (ulong)_rng.Next();
 
             for (int i = 0; i < 4; i++)
             {
-                CastlingRights[i] = (ulong)rng.Next() << 32 | (ulong)rng.Next();
+                CastlingRights[i] = (ulong)_rng.Next() << 32 | (ulong)_rng.Next();
             }
 
             for (int i = 0; i < 8; i++)
             {
-                EnPassantFile[i] = (ulong)rng.Next() << 32 | (ulong)rng.Next();
+                EnPassantFile[i] = (ulong)_rng.Next() << 32 | (ulong)_rng.Next();
             }
         }
     }

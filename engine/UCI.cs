@@ -2,8 +2,8 @@ namespace Engine
 {
     public class Uci
     {
-        private Board board = new Board();
-        private Engine engine = new Engine();
+        public Board Board = new Board();
+        public Engine Engine = new Engine();
 
         public List<Move> PlayedMoves = new List<Move>();
         public List<MoveInfo> PlayedMovesInfo = new List<MoveInfo>();
@@ -19,7 +19,7 @@ namespace Engine
                 switch (input)
                 {
                     case "uci":
-                        Console.WriteLine("id name Milan 2026-06-11");
+                        Console.WriteLine("id name Milan 2026-06-12");
                         Console.WriteLine("id author OL");
                         Console.WriteLine("uciok");
                         break;
@@ -33,19 +33,11 @@ namespace Engine
                         break;
 
                     case string s when s.StartsWith("go"):
-                        int depth = 6;
-                        if (s.Contains("depth")) int.TryParse(s.Split("depth ")[1].Split(' ')[0], out depth);
-
-                        // engine.Search(board, depth, out Move bestMove, PlayedMoves, PlayedMovesInfo);
-                        Move bestMove = engine.IterativeDeepening(board, depth, PlayedMoves, PlayedMovesInfo);
-
-                        engine.ClearOldData();
-
-                        Console.WriteLine($"bestmove {bestMove.ToString()}");
+                        HandleGo(s);
                         break;
 
                     case "ucinewgame":
-                        engine = new Engine();
+                        Engine = new Engine();
                         break;
 
                     case "quit":
@@ -58,37 +50,70 @@ namespace Engine
         {
             PlayedMoves.Clear();
             PlayedMovesInfo.Clear();
-            board = new Board();
+            Board = new Board();
 
             if (input.Contains("startpos"))
             {
-                board.SetupBoard();
+                Board.SetupBoard();
             }
             else if (input.Contains("fen"))
             {
                 string fen = input.Split("fen ")[1];
                 fen = fen.Split(" moves")[0];
-                board.SetupBoard(fen);
+                Board.SetupBoard(fen);
             }
 
-            if (input.Contains("moves") && board.BoardHash != 0)
+            if (input.Contains("moves") && Board.BoardHash != 0)
             {
                 string moves = input.Split("moves ")[1];
                 foreach (string move in moves.Split(' '))
                 {
-                    Move.TryParse(board.SideToMove, move, out Move parsedMove);
+                    Move.TryParse(Board.SideToMove, move, out Move parsedMove);
 
-                    if (!board.IsMoveLegal(parsedMove))
+                    if (!Board.IsMoveLegal(parsedMove))
                     {
                         Console.WriteLine("Illegal move in UCI input.");
                         Console.WriteLine($"Move: {move}");
                         Environment.Exit(1);
                     }
 
-                    PlayedMovesInfo.Add(board.MakeMove(parsedMove));
+                    PlayedMovesInfo.Add(Board.MakeMove(parsedMove));
                     PlayedMoves.Add(parsedMove);
                 }
             }
+        }
+
+        private void HandleGo(string input)
+        {
+            Move bestMove = null;
+
+            if (input.Contains("wtime"))
+            {
+                int timeLeft, increment;
+                if (Board.SideToMove == PieceColor.White)
+                {
+                    timeLeft = int.Parse(input.Split("wtime ")[1].Split(' ')[0]);
+                    increment = input.Contains("winc") ? int.Parse(input.Split("winc ")[1].Split(' ')[0]) : 0;
+                }
+                else
+                {
+                    timeLeft = int.Parse(input.Split("btime ")[1].Split(' ')[0]);
+                    increment = input.Contains("binc") ? int.Parse(input.Split("binc ")[1].Split(' ')[0]) : 0;
+                }
+
+                TimeSpan timeLimitSoft = TimeSpan.FromMilliseconds(timeLeft / 20 + increment / 2);
+                TimeSpan timeLimitHard = TimeSpan.FromMilliseconds(timeLeft / 6 + increment);
+
+                bestMove = Engine.IterativeDeepening(Board, timeLimitSoft, timeLimitHard, PlayedMoves, PlayedMovesInfo);
+            }
+            else
+            {
+                int depth = input.Contains("depth") ? int.Parse(input.Split("depth ")[1].Split(' ')[0]) : 6;
+                bestMove = Engine.IterativeDeepening(Board, depth, PlayedMoves, PlayedMovesInfo);
+            }
+
+            Engine.ClearOldData();
+            Console.WriteLine($"bestmove {bestMove.ToString()}");
         }
     }
 }
