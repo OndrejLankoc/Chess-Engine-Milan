@@ -19,7 +19,7 @@ namespace Engine
                 switch (input)
                 {
                     case "uci":
-                        Console.WriteLine("id name Milan 2026-06-13");
+                        Console.WriteLine("id name Milan 2026-06-13_2");
                         Console.WriteLine("id author OL");
                         Console.WriteLine("uciok");
                         break;

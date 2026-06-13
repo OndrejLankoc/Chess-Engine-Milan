@@ -221,9 +221,9 @@ namespace Engine
 
                 stability = (depth >= 4 && candidate.Equals(bestMove!)) ? stability + 1 : 0;
                 if (stability >= 3) break;
-                if (Math.Abs(score) >= MateThreshold) break;
 
                 if ((DateTime.Now - _startTime) < _timeLimit) bestMove = candidate;
+                if (Math.Abs(score) >= MateThreshold) break;
                 depth++;
             } while (true);
 
