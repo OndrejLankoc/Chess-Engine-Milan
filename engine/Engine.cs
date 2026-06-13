@@ -12,6 +12,7 @@ namespace Engine
         private const int Infinity = 1_000_000;
         private TimeSpan _timeLimit;
         private DateTime _startTime;
+        private bool _isTimeLimitSet = false;
 
         public int Evaluate(Board board)
         {
@@ -193,6 +194,7 @@ namespace Engine
         public Move IterativeDeepening(Board board, int maxDepth, List<Move> allMoves, List<MoveInfo> allMovesInfo)
         {
             Move bestMove = null;
+            _isTimeLimitSet = false;
 
             for (int i = 1; i <= maxDepth; i++)
             {
@@ -207,16 +209,22 @@ namespace Engine
             Move bestMove = null;
             _startTime = DateTime.Now;
             _timeLimit = timeLimitHard;
+            _isTimeLimitSet = true;
             int depth = 1;
+            int stability = 0;
 
             do
             {
                 if ((DateTime.Now - _startTime) >= timeLimitSoft) break;
 
-                Search(board, depth, out Move candidate, allMoves, allMovesInfo);
-                depth++;
+                int score = Search(board, depth, out Move candidate, allMoves, allMovesInfo);
+
+                stability = (depth >= 4 && candidate.Equals(bestMove!)) ? stability + 1 : 0;
+                if (stability >= 3) break;
+                if (Math.Abs(score) >= MateThreshold) break;
 
                 if ((DateTime.Now - _startTime) < _timeLimit) bestMove = candidate;
+                depth++;
             } while (true);
 
             return bestMove!;
@@ -228,7 +236,7 @@ namespace Engine
             int r = 0;
             List<Move> moves = new List<Move>();
 
-            if ((DateTime.Now - _startTime) >= _timeLimit) return 0;
+            if (_isTimeLimitSet && (DateTime.Now - _startTime) >= _timeLimit) return 0;
 
             for (int rank = 0; rank < 8; rank++)
             {
@@ -248,7 +256,13 @@ namespace Engine
                 return result == GameResult.WhiteWin ? Mate : result == GameResult.BlackWin ? -Mate : 0;
             }
 
-            if (depth <= 0 || moves.Count == 0)
+            if (moves.Count == 1 && ply == 0)
+            {
+                bestMove = moves[0];
+                return 0;
+            }
+
+            if (depth <= 0)
             {
                 return Quiescence(board, allMoves, allMovesInfo, ply, alpha, beta);
             }
@@ -285,17 +299,8 @@ namespace Engine
 
                 else if (entry.BestMove != null)
                 {
-                    if (entry.Type == NodeType.Exact || entry.Type == NodeType.LowerBound)
-                    {
-                        moves.RemoveAll(m => m.Equals(entry.BestMove));
-                        moves.Insert(0, entry.BestMove);
-                    }
-
-                    else if (entry.Type == NodeType.UpperBound)
-                    {
-                        moves.RemoveAll(m => m.Equals(entry.BestMove));
-                        moves.Add(entry.BestMove);
-                    }
+                    moves.RemoveAll(m => m.Equals(entry.BestMove));
+                    moves.Insert(0, entry.BestMove);
                 }
             }
 
