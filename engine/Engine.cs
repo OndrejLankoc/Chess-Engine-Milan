@@ -193,7 +193,7 @@ namespace Engine
 
         public Move IterativeDeepening(Board board, int maxDepth, List<Move> allMoves, List<MoveInfo> allMovesInfo)
         {
-            Move bestMove = null;
+            Move? bestMove = null;
             _isTimeLimitSet = false;
 
             for (int i = 1; i <= maxDepth; i++)
@@ -217,12 +217,12 @@ namespace Engine
             {
                 if ((DateTime.Now - _startTime) >= timeLimitSoft) break;
 
-                int score = Search(board, depth, out Move candidate, allMoves, allMovesInfo);
+                int score = Search(board, depth, out Move? candidate, allMoves, allMovesInfo);
 
-                stability = (depth >= 4 && candidate.Equals(bestMove!)) ? stability + 1 : 0;
+                stability = (depth >= 4 && candidate != null && bestMove != null && candidate.Equals(bestMove)) ? stability + 1 : 0;
                 if (stability >= 3) break;
 
-                if ((DateTime.Now - _startTime) < _timeLimit) bestMove = candidate;
+                if ((DateTime.Now - _startTime) < _timeLimit && candidate != null) bestMove = candidate;
                 if (Math.Abs(score) >= MateThreshold) break;
                 depth++;
             } while (true);
@@ -230,7 +230,7 @@ namespace Engine
             return bestMove!;
         }
 
-        public int Search(Board board, int depth, out Move bestMove, List<Move> allMoves, List<MoveInfo> allMovesInfo, int ply = 0, int alpha = -Infinity, int beta = Infinity, bool nullMoveAllowed = true)
+        public int Search(Board board, int depth, out Move? bestMove, List<Move> allMoves, List<MoveInfo> allMovesInfo, int ply = 0, int alpha = -Infinity, int beta = Infinity, bool nullMoveAllowed = true)
         {
             bestMove = null;
             int r = 0;
@@ -250,16 +250,16 @@ namespace Engine
                 }
             }
 
-            GameResult result = board.Result(allMovesInfo, allMoves, out _, moves.Count);
-            if (result != GameResult.Ongoing)
-            {
-                return result == GameResult.WhiteWin ? Mate : result == GameResult.BlackWin ? -Mate : 0;
-            }
-
             if (moves.Count == 1 && ply == 0)
             {
                 bestMove = moves[0];
                 return 0;
+            }
+
+            GameResult result = board.Result(allMovesInfo, allMoves, out _, moves.Count);
+            if (result != GameResult.Ongoing)
+            {
+                return result == GameResult.WhiteWin ? Mate : result == GameResult.BlackWin ? -Mate : 0;
             }
 
             if (depth <= 0)
@@ -402,6 +402,7 @@ namespace Engine
 
         private int Quiescence(Board board, List<Move> allMoves, List<MoveInfo> allMovesInfo, int ply, int alpha, int beta)
         {
+            if (_isTimeLimitSet && (DateTime.Now - _startTime) >= _timeLimit) return 0;
             List<Move> moves = new List<Move>();
             int alphaOriginal = alpha;
             
