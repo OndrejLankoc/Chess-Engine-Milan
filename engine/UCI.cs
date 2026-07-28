@@ -19,7 +19,7 @@ namespace Engine
                 switch (input)
                 {
                     case "uci":
-                        Console.WriteLine("id name Milan 2026-06-15");
+                        Console.WriteLine("id name Milan 2026-07-28");
                         Console.WriteLine("id author OL");
                         Console.WriteLine("uciok");
                         break;
@@ -87,7 +87,15 @@ namespace Engine
         {
             Move bestMove = null;
 
-            if (input.Contains("wtime"))
+            if (input.Contains("movetime"))
+            {
+                int moveTime = int.Parse(input.Split("movetime ")[1].Split(' ')[0]);
+                TimeSpan timeLimitSoft = TimeSpan.FromMilliseconds(moveTime * 0.85);
+                TimeSpan timeLimitHard = TimeSpan.FromMilliseconds(moveTime);
+
+                bestMove = Engine.IterativeDeepening(Board, timeLimitSoft, timeLimitHard, PlayedMoves, PlayedMovesInfo);
+            }
+            else if (input.Contains("wtime"))
             {
                 int timeLeft, increment;
                 if (Board.SideToMove == PieceColor.White)
