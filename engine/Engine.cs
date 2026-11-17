@@ -206,7 +206,7 @@ namespace Engine
 
         public Move IterativeDeepening(Board board, TimeSpan timeLimitSoft, TimeSpan timeLimitHard, List<Move> allMoves, List<MoveInfo> allMovesInfo)
         {
-            Move bestMove = null;
+            Move? bestMove = null;
             _startTime = DateTime.Now;
             _timeLimit = timeLimitHard;
             _isTimeLimitSet = true;
@@ -215,16 +215,17 @@ namespace Engine
 
             do
             {
-                if ((DateTime.Now - _startTime) >= timeLimitSoft) break;
-
                 int score = Search(board, depth, out Move? candidate, allMoves, allMovesInfo);
+                if (score > Infinity && bestMove == null) return candidate!;
 
                 stability = (depth >= 4 && candidate != null && bestMove != null && candidate.Equals(bestMove)) ? stability + 1 : 0;
                 if (stability >= 3) break;
 
-                if ((DateTime.Now - _startTime) < _timeLimit && candidate != null) bestMove = candidate;
+                if ((DateTime.Now - _startTime) < _timeLimit && candidate != null || bestMove == null) bestMove = candidate!;
                 if (Math.Abs(score) >= MateThreshold) break;
                 depth++;
+
+                if ((DateTime.Now - _startTime) >= timeLimitSoft) break;
             } while (true);
 
             return bestMove!;
@@ -236,7 +237,7 @@ namespace Engine
             int r = 0;
             List<Move> moves = new List<Move>();
 
-            if (_isTimeLimitSet && (DateTime.Now - _startTime) >= _timeLimit) return 0;
+            if (_isTimeLimitSet && (DateTime.Now - _startTime) >= _timeLimit) return Infinity + 1;
 
             for (int rank = 0; rank < 8; rank++)
             {
@@ -315,18 +316,28 @@ namespace Engine
                     {
                         int score = Search(board, depth - 1 - r, out _, allMoves, allMovesInfo, ply + 1, alpha, alpha + 1, false);
                         board.UndoMove(nullMoveInfo);
+                        if (score > Infinity)
+                        {
+                            bestMove = moves[0];
+                            return score;
+                        }
                         if (score <= alpha) return alpha;
                     }
                     else
                     {
                         int score = Search(board, depth - 1 - r, out _, allMoves, allMovesInfo, ply + 1, beta - 1, beta, false);
                         board.UndoMove(nullMoveInfo);
+                        if (score > Infinity)
+                        {
+                            bestMove = moves[0];
+                            return score;
+                        }
                         if (score >= beta) return beta;
                     }
                 }
             }
 
-            int bestScore = board.SideToMove == PieceColor.White ? int.MinValue : int.MaxValue;
+            int bestScore = board.SideToMove == PieceColor.White ? int.MinValue + 1 : int.MaxValue - 1;
             foreach (Move move in moves)
             {
                 r = 0;
@@ -348,12 +359,18 @@ namespace Engine
                             board.SideToMove == PieceColor.Black && score > alpha) r = 0;
                     }
                 }
-                if (r == 0) score = Search(board, depth - 1, out _, allMoves, allMovesInfo, ply + 1, alpha, beta);
-                if (Math.Abs(score) >= MateThreshold) score += score > 0 ? -1 : 1;
+                if (r == 0 && score <= Infinity) score = Search(board, depth - 1, out _, allMoves, allMovesInfo, ply + 1, alpha, beta);
 
                 board.UndoMove(move, allMovesInfo.Last());
                 allMoves.RemoveAt(allMoves.Count - 1);
                 allMovesInfo.RemoveAt(allMovesInfo.Count - 1);
+
+                if (score > Infinity)
+                {
+                    if (Math.Abs(bestScore) > Infinity) bestScore = score;
+                    break;
+                }
+                if (Math.Abs(score) >= MateThreshold) score += score > 0 ? -1 : 1;
 
                 if (board.SideToMove == PieceColor.White)
                 {
@@ -386,23 +403,30 @@ namespace Engine
             }
 
             NodeType nodeType = NodeType.Exact;
-            if (bestScore <= alphaOriginal)
+            if (bestScore < Infinity)
             {
-                nodeType = NodeType.UpperBound;
-            }
-            else if (bestScore >= beta)
-            {
-                nodeType = NodeType.LowerBound;
+                if (bestScore <= alphaOriginal)
+                {
+                    nodeType = NodeType.UpperBound;
+                }
+                else if (bestScore >= beta)
+                {
+                    nodeType = NodeType.LowerBound;
+                }
             }
 
             TT.Store(board.BoardHash, bestScore, depth, nodeType, bestMove);
-
+            if (bestMove == null && ply == 0)
+            {
+                bestMove = moves[0];
+                return Infinity + 1;
+            }
             return bestScore;
         }
 
         private int Quiescence(Board board, List<Move> allMoves, List<MoveInfo> allMovesInfo, int ply, int alpha, int beta)
         {
-            if (_isTimeLimitSet && (DateTime.Now - _startTime) >= _timeLimit) return 0;
+            if (_isTimeLimitSet && (DateTime.Now - _startTime) >= _timeLimit) return Infinity + 1;
             List<Move> moves = new List<Move>();
             int alphaOriginal = alpha;
             
@@ -475,11 +499,13 @@ namespace Engine
                 allMovesInfo.Add(board.MakeMove(move));
 
                 int score = Quiescence(board, allMoves, allMovesInfo, ply + 1, alpha, beta);
-                if (Math.Abs(score) >= MateThreshold) score = score > 0 ? score - 1 : score + 1;
 
                 board.UndoMove(move, allMovesInfo.Last());
                 allMoves.RemoveAt(allMoves.Count - 1);
                 allMovesInfo.RemoveAt(allMovesInfo.Count - 1);
+
+                if (score > Infinity) return score;
+                if (Math.Abs(score) >= MateThreshold) score = score > 0 ? score - 1 : score + 1;
 
                 if (board.SideToMove == PieceColor.White) alpha = Math.Max(alpha, score);
                 else beta = Math.Min(beta, score);

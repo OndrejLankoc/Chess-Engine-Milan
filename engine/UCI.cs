@@ -19,7 +19,7 @@ namespace Engine
                 switch (input)
                 {
                     case "uci":
-                        Console.WriteLine("id name Milan 2026-07-28");
+                        Console.WriteLine("id name Milan 2026-11-17");
                         Console.WriteLine("id author OL");
                         Console.WriteLine("uciok");
                         break;
@@ -109,10 +109,8 @@ namespace Engine
                     increment = input.Contains("binc") ? int.Parse(input.Split("binc ")[1].Split(' ')[0]) : 0;
                 }
 
-                TimeSpan timeLimitSoft = TimeSpan.FromMilliseconds(timeLeft / 20 + increment / 2);
-                TimeSpan timeLimitHard = TimeSpan.FromMilliseconds(timeLeft / 6 + increment);
-
-                bestMove = Engine.IterativeDeepening(Board, timeLimitSoft, timeLimitHard, PlayedMoves, PlayedMovesInfo);
+                TimeSpan[] timeLimits = GetTimeLimits(timeLeft, increment);
+                bestMove = Engine.IterativeDeepening(Board, timeLimits[0], timeLimits[1], PlayedMoves, PlayedMovesInfo);
             }
             else
             {
@@ -122,6 +120,39 @@ namespace Engine
 
             Engine.ClearOldData();
             Console.WriteLine($"bestmove {bestMove.ToString()}");
+        }
+
+        private TimeSpan[] GetTimeLimits(int timeLeft, int increment)
+        {
+            TimeSpan[] timeLimits = new TimeSpan[2]; // [0] = soft limit, [1] = hard limit
+
+            double divisor;
+            switch (timeLeft)
+            {
+                case <= 10_000:
+                    divisor = 20;
+                    break;
+                
+                case <= 30_000:
+                    divisor = 35;
+                    break;
+                
+                case <= 120_000:
+                    divisor = 45;
+                    break;
+                
+                default:
+                    divisor = 60;
+                    break;
+            }
+
+            double reserve = Math.Clamp(timeLeft * 0.1, 500, 5_000);
+            if (reserve > timeLeft) reserve = timeLeft;
+            double timeForMove = timeLeft / divisor + increment * 0.8;
+
+            timeLimits[0] = TimeSpan.FromMilliseconds(Math.Min(timeForMove, timeLeft - reserve));
+            timeLimits[1] = TimeSpan.FromMilliseconds(Math.Min(timeForMove * 2.5, timeLeft - reserve));
+            return timeLimits;
         }
     }
 }
